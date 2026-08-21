@@ -1,9 +1,24 @@
 import streamlit as st
 import pandas as pd
+from streamlit_gsheets import GSheetsConnection
 
 st.set_page_config(page_title="MotoVueltas", layout="wide")
 
 st.title("🛵 MotoVueltas - Sistema de Control")
+
+# URL de tu Google Sheet
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1HS3Hn_9YQNEdnUgxnpsG1xDckJeGUwhVnNcMwe-EWrQ/edit?gid=0#gid=0"
+
+# Conexión con Google Sheets
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+# Cargar clientes desde Google Sheets
+def cargar_clientes():
+    try:
+        df = conn.read(spreadsheet=SHEET_URL, ttl=0)
+        return df
+    except Exception as e:
+        return pd.DataFrame(columns=["Nombre", "Telefono", "Tipo", "Ubicacion", "Saldo"])
 
 # Pestañas principales
 tab1, tab2, tab3, tab4 = st.tabs(["📋 Registrar Carrera", "👥 Clientes", "📊 Servicios Pendientes", "💰 Cortar Cuenta / WhatsApp"])
@@ -24,23 +39,31 @@ with tab2:
     
     with col1:
         st.subheader("Registrar Nuevo Cliente")
-        nombre_cliente = st.text_input("Nombre del Cliente / Empresa")
-        telefono_cliente = st.text_input("Teléfono (WhatsApp)")
-        tipo_cliente = st.selectbox("Tipo de Cliente", ["Fijo", "Eventual"])
+        nombre = st.text_input("Nombre del Cliente / Empresa")
+        telefono = st.text_input("Teléfono (WhatsApp)")
+        tipo = st.selectbox("Tipo de Cliente", ["Fijo", "Eventual"])
         ubicacion = st.text_input("Ubicación Habitual")
         
         if st.button("Guardar Cliente"):
-            st.success(f"Cliente {nombre_cliente} guardado con éxito.")
+            if nombre and telefono:
+                df_actual = cargar_clientes()
+                nuevo_cliente = pd.DataFrame([{
+                    "Nombre": nombre,
+                    "Telefono": telefono,
+                    "Tipo": tipo,
+                    "Ubicacion": ubicacion,
+                    "Saldo": 0.0
+                }])
+                df_actualizado = pd.concat([df_actual, nuevo_cliente], ignore_index=True)
+                conn.update(spreadsheet=SHEET_URL, data=df_actualizado)
+                st.success(f"¡Cliente {nombre} guardado con éxito en Google Sheets!")
+                st.rerun()
+            else:
+                st.error("Por favor completa el Nombre y Teléfono.")
 
     with col2:
-        st.subheader("Directorio de Clientes")
-        # Vista previa demostrativa de la tabla de clientes
-        df_clientes = pd.DataFrame({
-            "Cliente": ["Cliente Ejemplo 1", "Cliente Ejemplo 2"],
-            "Teléfono": ["+584141234567", "+584129876543"],
-            "Tipo": ["Fijo", "Eventual"],
-            "Saldo Pendiente ($)": [0.0, 15.0]
-        })
+        st.subheader("Directorio de Clientes en Vivo")
+        df_clientes = cargar_clientes()
         st.dataframe(df_clientes, use_container_width=True)
 
 with tab3:
