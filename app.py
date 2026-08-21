@@ -201,9 +201,6 @@ with tab4:
 # ---------------------------------------------------------
 # TAB 5: DIRECTORIO DE CLIENTES
 # ---------------------------------------------------------
-# ---------------------------------------------------------
-# TAB 5: DIRECTORIO DE CLIENTES
-# ---------------------------------------------------------
 with tab5:
     st.subheader("Directorio de Clientes")
     st.dataframe(df_clientes, use_container_width=True)
@@ -211,7 +208,7 @@ with tab5:
     # SECCIÓN PARA EDITAR CLIENTE EXISTENTE
     if not df_clientes.empty:
         st.write("---")
-        st.write("### ✏️ Editar / Actualizar Cliente Existing")
+        st.write("### ✏️ Editar / Actualizar Cliente Existente")
         cliente_a_editar = st.selectbox("Seleccionar Cliente a Modificar", df_clientes['Nombre'].tolist())
         
         # Obtener datos actuales del cliente seleccionado
@@ -224,7 +221,11 @@ with tab5:
             edit_ubicacion = st.text_input("Ubicación / Dirección Referencial", value=str(datos_cli.get('Ubicacion', '')))
             
         if st.button("Actualizar Datos del Cliente", type="primary"):
-            df_clientes.loc[df_clientes['Nombre'] == cliente_a_editar, ['Telefono', 'Ubicacion']] = [edit_tel.strip(), edit_ubicacion.strip()]
+            # Actualización columna por columna para evitar el TypeError de Pandas
+            idx = df_clientes[df_clientes['Nombre'] == cliente_a_editar].index
+            df_clientes.loc[idx, 'Telefono'] = edit_tel.strip()
+            df_clientes.loc[idx, 'Ubicacion'] = edit_ubicacion.strip()
+            
             df_clientes.to_csv(FILE_CLIENTES, index=False)
             st.success(f"¡Datos de '{cliente_a_editar}' actualizados correctamente!")
             st.rerun()
