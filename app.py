@@ -15,10 +15,12 @@ FILE_SERVICIOS = "servicios.csv"
 def cargar_datos():
     if os.path.exists(FILE_CLIENTES):
         df_cli = pd.read_csv(FILE_CLIENTES)
+        if 'Ubicacion' not in df_cli.columns:
+            df_cli['Ubicacion'] = "-"
+            df_cli.to_csv(FILE_CLIENTES, index=False)
     else:
-        df_cli = pd.DataFrame([{"Nombre": "Cliente General", "Telefono": "04140000000"}])
+        df_cli = pd.DataFrame([{"Nombre": "Cliente General", "Telefono": "04140000000", "Ubicacion": "Centro"}])
         df_cli.to_csv(FILE_CLIENTES, index=False)
-
     if os.path.exists(FILE_MOTORIZADOS):
         df_mot = pd.read_csv(FILE_MOTORIZADOS)
     else:
