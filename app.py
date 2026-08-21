@@ -201,21 +201,46 @@ with tab4:
 # ---------------------------------------------------------
 # TAB 5: DIRECTORIO DE CLIENTES
 # ---------------------------------------------------------
+# ---------------------------------------------------------
+# TAB 5: DIRECTORIO DE CLIENTES
+# ---------------------------------------------------------
 with tab5:
     st.subheader("Directorio de Clientes")
     st.dataframe(df_clientes, use_container_width=True)
     
+    # SECCIÓN PARA EDITAR CLIENTE EXISTENTE
+    if not df_clientes.empty:
+        st.write("---")
+        st.write("### ✏️ Editar / Actualizar Cliente Existing")
+        cliente_a_editar = st.selectbox("Seleccionar Cliente a Modificar", df_clientes['Nombre'].tolist())
+        
+        # Obtener datos actuales del cliente seleccionado
+        datos_cli = df_clientes[df_clientes['Nombre'] == cliente_a_editar].iloc[0]
+        
+        col_e1, col_e2 = st.columns(2)
+        with col_e1:
+            edit_tel = st.text_input("Teléfono / WhatsApp", value=str(datos_cli.get('Telefono', '')))
+        with col_e2:
+            edit_ubicacion = st.text_input("Ubicación / Dirección Referencial", value=str(datos_cli.get('Ubicacion', '')))
+            
+        if st.button("Actualizar Datos del Cliente", type="primary"):
+            df_clientes.loc[df_clientes['Nombre'] == cliente_a_editar, ['Telefono', 'Ubicacion']] = [edit_tel.strip(), edit_ubicacion.strip()]
+            df_clientes.to_csv(FILE_CLIENTES, index=False)
+            st.success(f"¡Datos de '{cliente_a_editar}' actualizados correctamente!")
+            st.rerun()
+
+    # SECCIÓN PARA AGREGAR NUEVO CLIENTE
     st.write("---")
-    st.write("### Agregar Nuevo Cliente")
+    st.write("### ➕ Agregar Nuevo Cliente")
     col_c1, col_c2, col_c3 = st.columns(3)
     with col_c1:
         nuevo_cli_nombre = st.text_input("Nombre / Negocio")
     with col_c2:
-        nuevo_cli_tel = st.text_input("Teléfono / WhatsApp")
+        nuevo_cli_tel = st.text_input("Teléfono / WhatsApp (Nuevo)")
     with col_c3:
-        nuevo_cli_ubicacion = st.text_input("Ubicación / Dirección Referencial")
+        nuevo_cli_ubicacion = st.text_input("Ubicación / Dirección (Nuevo)")
         
-    if st.button("Guardar Cliente"):
+    if st.button("Guardar Nuevo Cliente"):
         if nuevo_cli_nombre.strip():
             nuevo_registro_cli = {
                 "Nombre": nuevo_cli_nombre.strip(), 
