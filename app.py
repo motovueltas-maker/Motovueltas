@@ -207,18 +207,27 @@ with tab5:
     
     st.write("---")
     st.write("### Agregar Nuevo Cliente")
-    col_c1, col_c2 = st.columns(2)
+    col_c1, col_c2, col_c3 = st.columns(3)
     with col_c1:
         nuevo_cli_nombre = st.text_input("Nombre / Negocio")
     with col_c2:
         nuevo_cli_tel = st.text_input("Teléfono / WhatsApp")
+    with col_c3:
+        nuevo_cli_ubicacion = st.text_input("Ubicación / Dirección Referencial")
         
     if st.button("Guardar Cliente"):
         if nuevo_cli_nombre.strip():
-            df_clientes = pd.concat([df_clientes, pd.DataFrame([{"Nombre": nuevo_cli_nombre.strip(), "Telefono": nuevo_cli_tel.strip()}])], ignore_index=True)
+            nuevo_registro_cli = {
+                "Nombre": nuevo_cli_nombre.strip(), 
+                "Telefono": nuevo_cli_tel.strip(),
+                "Ubicacion": nuevo_cli_ubicacion.strip() if nuevo_cli_ubicacion.strip() else "-"
+            }
+            df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
             df_clientes.to_csv(FILE_CLIENTES, index=False)
             st.success(f"Cliente '{nuevo_cli_nombre}' agregado con éxito.")
             st.rerun()
+        else:
+            st.error("Por favor ingresa al menos el nombre del cliente.")
 
 # ---------------------------------------------------------
 # TAB 6: PERFILES DE MOTORIZADOS
