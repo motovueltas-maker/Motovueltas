@@ -63,8 +63,8 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 with tab1:
     st.subheader("Agregar Vuelta")
     
-    # Selector de fecha fija que se mantiene en la sesión
-   fecha_operativa = st.date_input("Fecha de las carreras", key="fecha_carreras_fija", format="DD/MM/YYYY")
+    # Selector con formato DD/MM/YYYY y clave única
+    fecha_operativa = st.date_input("Fecha de las carreras", key="fecha_carreras_fija", format="DD/MM/YYYY")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -105,7 +105,7 @@ with tab1:
             st.rerun()
         else:
             st.error("⚠️ Ingresa el destino de la carrera.")
-
+            
 # ---------------------------------------------------------
 # TAB 2: VALIDAR PRECIOS (ADMINISTRADOR)
 # ---------------------------------------------------------
