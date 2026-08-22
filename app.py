@@ -61,7 +61,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 # TAB 1: REGISTRAR VUELTA (SOLO MOTORIZADO)
 # ---------------------------------------------------------
 with tab1:
-    st.subheader("Registro Rápido de Carrera")
+    st.subheader("Nueva Vuelta")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -72,9 +72,8 @@ with tab1:
         cli_sel = st.selectbox("Seleccionar Cliente", lista_cli)
         
     with col2:
-        origen = st.text_input("Origen (Desde)", value="Local")
-        destino = st.text_input("Destino (Hasta)")
-        detalle = st.text_area("Detalle / Observación del servicio")
+        origen = st.text_input("Desde", value="Local")
+        destino = st.text_input("Hasta")
 
     if st.button("Enviar Vuelta para Validación", type="primary", use_container_width=True):
         if destino.strip():
