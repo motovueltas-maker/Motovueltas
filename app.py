@@ -57,49 +57,8 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "⚙️ Perfiles Motorizados"
 ])
 
-# ---------------------------------------------------------
-# TAB 1: REGISTRAR VUELTA (SOLO MOTORIZADO)
-# ---------------------------------------------------------
 with tab1:
     st.subheader("Nueva Vuelta")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        lista_motos = df_motorizados['Nombre'].tolist()
-        moto_sel = st.selectbox("Tu Nombre (Motorizado)", lista_motos)
-        
-        lista_cli = df_clientes['Nombre'].tolist()
-        cli_sel = st.selectbox("Seleccionar Cliente", lista_cli)
-        
-    with col2:
-        origen = st.text_input("Desde", value="Local")
-        destino = st.text_input("Hasta")
-
-    if st.button("Enviar Vuelta para Validación", type="primary", use_container_width=True):
-        if destino.strip():
-            nuevo_id = len(df_servicios) + 1
-            nueva_fila = {
-                'ID': nuevo_id,
-                'Fecha': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                'Motorizado': moto_sel,
-                'Cliente': cli_sel,
-                'Origen': origen.strip(),
-                'Destino': destino.strip(),
-                'Detalle': "-",
-                'Precio_Cliente': 0.0,
-                'Porcentaje_Comision': 0.0,
-                'Monto_Motorizado': 0.0,
-                'Ganancia_Empresa': 0.0,
-                'Estado_Validacion': 'Pendiente',
-                'Estado_Cliente': 'Pendiente',
-                'Estado_Motorizado': 'Pendiente'
-            }
-            df_servicios = pd.concat([df_servicios, pd.DataFrame([nueva_fila])], ignore_index=True)
-            df_servicios.to_csv(FILE_SERVICIOS, index=False)
-            st.success(f"¡Vuelta #{nuevo_id} enviada! Quedó en espera de validación.")
-            st.rerun()
-        else:
-            st.error("Ingresa el destino de la carrera.")
 
 # ---------------------------------------------------------
 # TAB 2: VALIDAR PRECIOS (ADMINISTRADOR)
