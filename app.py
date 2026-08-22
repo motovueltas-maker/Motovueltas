@@ -64,7 +64,7 @@ with tab1:
     st.subheader("Agregar Vuelta")
     
     # Selector de fecha fija que se mantiene en la sesión
-    fecha_operativa = st.date_input("Fecha de las carreras", key="fecha_carreras_fija")
+   fecha_operativa = st.date_input("Fecha de las carreras", key="fecha_carreras_fija", format="DD/MM/YYYY")
     
     col1, col2 = st.columns(2)
     with col1:
