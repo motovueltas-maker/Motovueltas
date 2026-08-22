@@ -85,7 +85,7 @@ with tab1:
                 'Cliente': cli_sel,
                 'Origen': origen.strip(),
                 'Destino': destino.strip(),
-                'Detalle': detalle.strip(),
+                'Detalle': 'Detalle': "-",
                 'Precio_Cliente': 0.0,
                 'Porcentaje_Comision': 0.0,
                 'Monto_Motorizado': 0.0,
