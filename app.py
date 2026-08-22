@@ -205,55 +205,83 @@ with tab5:
     st.subheader("Directorio de Clientes")
     st.dataframe(df_clientes, use_container_width=True)
     
-    # SECCIÓN PARA EDITAR CLIENTE EXISTENTE
-    if not df_clientes.empty:
-        st.write("---")
-        st.write("### ✏️ Editar / Actualizar Cliente Existente")
-        cliente_a_editar = st.selectbox("Seleccionar Cliente a Modificar", df_clientes['Nombre'].tolist())
-        
-        # Obtener datos actuales del cliente seleccionado
-        datos_cli = df_clientes[df_clientes['Nombre'] == cliente_a_editar].iloc[0]
-        
-        col_e1, col_e2 = st.columns(2)
-        with col_e1:
-            edit_tel = st.text_input("Teléfono / WhatsApp", value=str(datos_cli.get('Telefono', '')))
-        with col_e2:
-            edit_ubicacion = st.text_input("Ubicación / Dirección Referencial", value=str(datos_cli.get('Ubicacion', '')))
-            
-        if st.button("Actualizar Datos del Cliente", type="primary"):
-            # Actualización columna por columna para evitar el TypeError de Pandas
-            idx = df_clientes[df_clientes['Nombre'] == cliente_a_editar].index
-            df_clientes.loc[idx, 'Telefono'] = edit_tel.strip()
-            df_clientes.loc[idx, 'Ubicacion'] = edit_ubicacion.strip()
-            
-            df_clientes.to_csv(FILE_CLIENTES, index=False)
-            st.success(f"¡Datos de '{cliente_a_editar}' actualizados correctamente!")
-            st.rerun()
-
-    # SECCIÓN PARA AGREGAR NUEVO CLIENTE
+    # 1. SECCIÓN PARA AGREGAR NUEVO CLIENTE (AHORA ARRIBA)
     st.write("---")
     st.write("### ➕ Agregar Nuevo Cliente")
     col_c1, col_c2, col_c3 = st.columns(3)
     with col_c1:
         nuevo_cli_nombre = st.text_input("Nombre / Negocio")
     with col_c2:
-        nuevo_cli_tel = st.text_input("Teléfono / WhatsApp (Nuevo)")
+        nuevo_cli_tel = st.text_input("Teléfono / WhatsApp (ID Único)")
     with col_c3:
         nuevo_cli_ubicacion = st.text_input("Ubicación / Dirección (Nuevo)")
         
-    if st.button("Guardar Nuevo Cliente"):
-        if nuevo_cli_nombre.strip():
-            nuevo_registro_cli = {
-                "Nombre": nuevo_cli_nombre.strip(), 
-                "Telefono": nuevo_cli_tel.strip(),
-                "Ubicacion": nuevo_cli_ubicacion.strip() if nuevo_cli_ubicacion.strip() else "-"
-            }
-            df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
-            df_clientes.to_csv(FILE_CLIENTES, index=False)
-            st.success(f"Cliente '{nuevo_cli_nombre}' agregado con éxito.")
-            st.rerun()
+    if st.button("Guardar Nuevo Cliente", type="primary"):
+        tel_limpio = nuevo_cli_tel.strip()
+        nom_limpio = nuevo_cli_nombre.strip()
+        
+        if not nom_limpio or not tel_limpio:
+            st.error("⚠️ Tanto el Nombre como el Teléfono son obligatorios.")
         else:
-            st.error("Por favor ingresa al menos el nombre del cliente.")
+            # Validar que el teléfono no exista previamente
+            telefonos_existentes = df_clientes['Telefono'].astype(str).str.strip().tolist()
+            if tel_limpio in telefonos_existentes:
+                st.error(f"❌ Ya existe un cliente registrado con el número {tel_limpio}. Usa la sección de abajo para editarlo.")
+            else:
+                nuevo_registro_cli = {
+                    "Nombre": nom_limpio, 
+                    "Telefono": tel_limpio,
+                    "Ubicacion": nuevo_cli_ubicacion.strip() if nuevo_cli_ubicacion.strip() else "-"
+                }
+                df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
+                df_clientes.to_csv(FILE_CLIENTES, index=False)
+                st.success(f"¡Cliente '{nom_limpio}' registrado con éxito!")
+                st.rerun()
+
+    # 2. SECCIÓN PARA EDITAR CLIENTE EXISTENTE (AHORA ABAJO)
+    if not df_clientes.empty:
+        st.write("---")
+        st.write("### ✏️ Editar / Actualizar Cliente Existente")
+        
+        # Crear opciones legibles combinando Nombre y Teléfono para la selección
+        df_clientes['Select_Label'] = df_clientes['Nombre'] + " (" + df_clientes['Telefono'].astype(str) + ")"
+        opciones_clientes = df_clientes['Select_Label'].tolist()
+        
+        cliente_sel_label = st.selectbox("Seleccionar Cliente a Modificar", opciones_clientes)
+        
+        # Obtener los datos exactos del cliente seleccionado mediante su índice
+        idx_seleccionado = df_clientes[df_clientes['Select_Label'] == cliente_sel_label].index[0]
+        datos_cli = df_clientes.loc[idx_seleccionado]
+        
+        col_e1, col_e2, col_e3 = st.columns(3)
+        with col_e1:
+            edit_nombre = st.text_input("Nombre / Negocio", value=str(datos_cli.get('Nombre', '')))
+        with col_e2:
+            edit_tel = st.text_input("Teléfono / WhatsApp", value=str(datos_cli.get('Telefono', '')))
+        with col_e3:
+            edit_ubicacion = st.text_input("Ubicación / Dirección", value=str(datos_cli.get('Ubicacion', '')))
+            
+        if st.button("Guardar Cambios del Cliente"):
+            edit_tel_limpio = edit_tel.strip()
+            
+            # Verificar si el teléfono cambiado choca con el de OTRO cliente existente
+            otros_telefonos = df_clientes.drop(idx_seleccionado)['Telefono'].astype(str).str.strip().tolist()
+            
+            if edit_tel_limpio in otros_telefonos:
+                st.error(f"❌ No puedes asignar el número {edit_tel_limpio} porque ya pertenece a otro cliente.")
+            else:
+                # Actualización directa por índice para garantizar el guardado
+                df_clientes.at[idx_seleccionado, 'Nombre'] = edit_nombre.strip()
+                df_clientes.at[idx_seleccionado, 'Telefono'] = edit_tel_limpio
+                df_clientes.at[idx_seleccionado, 'Ubicacion'] = edit_ubicacion.strip()
+                
+                # Limpiar columna auxiliar antes de guardar
+                if 'Select_Label' in df_clientes.columns:
+                    df_clientes = df_clientes.drop(columns=['Select_Label'])
+                    
+                df_clientes.to_csv(FILE_CLIENTES, index=False)
+                st.success("¡Datos del cliente actualizados exitosamente!")
+                st.rerun()
 
 # ---------------------------------------------------------
 # TAB 6: PERFILES DE MOTORIZADOS
