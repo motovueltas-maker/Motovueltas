@@ -75,21 +75,25 @@ with tab1:
         cli_sel = st.selectbox("Seleccionar Cliente", lista_cli)
         
     with col2:
-        origen = st.text_input("Desde", value="Local")
-        destino = st.text_input("Hasta")
+        origen = st.text_input("Desde", placeholder="Local")
+        destino = st.text_input("Hasta", placeholder="Local")
 
     if st.button("Enviar Vuelta para Validación", type="primary", use_container_width=True):
-        if destino.strip():
+        if destino.strip() or origen.strip():
             nuevo_id = len(df_servicios) + 1
             fecha_final = f"{fecha_operativa} {datetime.now().strftime('%H:%M')}"
+            
+            # Si el usuario lo deja vacío, asume "Local"
+            origen_final = origen.strip() if origen.strip() else "Local"
+            destino_final = destino.strip() if destino.strip() else "Local"
             
             nueva_fila = {
                 'ID': nuevo_id,
                 'Fecha': fecha_final,
                 'Motorizado': moto_sel,
                 'Cliente': cli_sel,
-                'Origen': origen.strip(),
-                'Destino': destino.strip(),
+                'Origen': origen_final,
+                'Destino': destino_final,
                 'Detalle': "-",
                 'Precio_Cliente': 0.0,
                 'Porcentaje_Comision': 66.67,
@@ -101,10 +105,10 @@ with tab1:
             }
             df_servicios = pd.concat([df_servicios, pd.DataFrame([nueva_fila])], ignore_index=True)
             df_servicios.to_csv(FILE_SERVICIOS, index=False)
-            st.success(f"¡Vuelta #{nuevo_id} guardada con la fecha {fecha_operativa}!")
+            st.success(f"¡Vuelta #{nuevo_id} guardada!")
             st.rerun()
         else:
-            st.error("⚠️ Ingresa el destino de la carrera.")
+            st.error("⚠️ Debes ingresar al menos el destino de la carrera.")  
             
 # ---------------------------------------------------------
 # TAB 2: VALIDAR PRECIOS (ADMINISTRADOR)
