@@ -378,17 +378,22 @@ with tab3:
                 use_container_width=True
             )
 
-            # 4. Generar mensaje de WhatsApp (Sin motorizado)
+            # 4. Generar mensaje de WhatsApp (Agrupado por fecha)
             msj = f"*MOTOVUELTAS - Resumen de Cuenta*\nCliente: *{cli_corte}*\n---\n"
-            for _, r in df_c.iterrows():
-                msj += f"• [{r['Fecha_Corta']}] {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
+            
+            # Ordenar por fecha cronológica
+            df_c_sorted = df_c.sort_values(by='Fecha_dt')
+            
+            # Agrupar servicios por cada fecha
+            for fecha_grupo, grupo in df_c_sorted.groupby('Fecha_Corta', sort=False):
+                msj += f"\n📅 *{fecha_grupo}*\n"
+                for _, r in grupo.iterrows():
+                    msj += f"• {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
 
             if total_abonos_cli > 0:
-                msj += f"---\nSubtotal Vueltas: ${total_vueltas_cli:.2f}\nAbonos Recibidos: -${total_abonos_cli:.2f}\n"
+                msj += f"\n---\nSubtotal Vueltas: ${total_vueltas_cli:.2f}\nAbonos Recibidos: -${total_abonos_cli:.2f}\n"
 
-            msj += f"---\n*TOTAL A PAGAR: ${total_neto_cli:.2f}*"
-
-            st.text_area("Mensaje de WhatsApp preparado:", msj, height=180)
+            msj += f"\n---\n*TOTAL A PAGAR: ${total_neto_cli:.2f}*"
 
             # 5. Obtener teléfono del cliente y generar enlace a WhatsApp
             row_cli = df_clientes[df_clientes['Nombre'] == cli_corte]
