@@ -384,9 +384,9 @@ with tab3:
             # Ordenar por fecha cronológica
             df_c_sorted = df_c.sort_values(by='Fecha_dt')
             
-            # Agrupar servicios por cada fecha
+            # Agrupar servicios por cada fecha (usando formato compatible)
             for fecha_grupo, grupo in df_c_sorted.groupby('Fecha_Corta', sort=False):
-                msj += f"\n📅 *{fecha_grupo}*\n"
+                msj += f"\n*Fecha {fecha_grupo}*\n"
                 for _, r in grupo.iterrows():
                     msj += f"• {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
 
@@ -395,11 +395,12 @@ with tab3:
 
             msj += f"\n---\n*TOTAL A PAGAR: ${total_neto_cli:.2f}*"
 
-            # 5. Obtener teléfono del cliente y generar enlace a WhatsApp
+            st.text_area("Mensaje de WhatsApp preparado:", msj, height=180)
+
+            # 5. Obtener teléfono del cliente y generar enlace codificado correctamente
             row_cli = df_clientes[df_clientes['Nombre'] == cli_corte]
             num_tlf = ""
             if not row_cli.empty:
-                # Intentar leer columna Telefono o Contacto
                 col_num = 'Telefono' if 'Telefono' in row_cli.columns else ('Contacto' if 'Contacto' in row_cli.columns else None)
                 if col_num:
                     num_tlf = str(row_cli[col_num].values[0]).replace("+", "").replace(" ", "").replace("-", "").strip()
@@ -408,36 +409,18 @@ with tab3:
             
             with col_btn1:
                 if num_tlf and num_tlf != "nan":
-                    # Si empieza por 04xx (Venezuela), anteponer código 58
                     if num_tlf.startswith("0"):
                         num_tlf_wa = "58" + num_tlf[1:]
                     else:
                         num_tlf_wa = num_tlf
                     
-                    # Reemplazo de caracteres especiales sin depender de urllib
-                    msj_encoded = msj.replace('\n', '%0A').replace(' ', '%20').replace('*', '%2A').replace('#', '%23')
+                    # Codificación de URL segura
+                    msj_encoded = urllib.parse.quote(msj)
                     link_wa = f"https://wa.me/{num_tlf_wa}?text={msj_encoded}"
                     
                     st.link_button("📲 Enviar por WhatsApp", link_wa, type="secondary", use_container_width=True)
                 else:
                     st.warning("⚠️ Sin número registrado en Clientes para envío directo.")
-
-            with col_btn2:
-                if st.button(f"Marcar Corte de {cli_corte} como PAGADO (${total_neto_cli:.2f})", type="primary", use_container_width=True):
-                    ids_a_pagar = df_c['ID'].tolist()
-                    df_servicios.loc[df_servicios['ID'].isin(ids_a_pagar), 'Estado_Cliente'] = 'Pagado'
-                    df_servicios.to_csv(FILE_SERVICIOS, index=False)
-                    
-                    if not df_abonos.empty:
-                        df_abonos.loc[(df_abonos['Cliente'] == cli_corte) & (df_abonos['Estado'] == 'Pendiente'), 'Estado'] = 'Pagado'
-                        df_abonos.to_csv(FILE_ABONOS, index=False)
-
-                    st.success("Corte y abonos procesados como PAGADOS correctamente.")
-                    st.rerun()
-        else:
-            st.warning("No hay vueltas registradas para este cliente en el rango seleccionado.")
-    else:
-        st.info("Sin cuentas pendientes por cobrar a clientes.")
 
 # ---------------------------------------------------------
 # TAB 4: LIQUIDACIÓN MOTORIZADOS CON GESTIÓN DE AVANCES
