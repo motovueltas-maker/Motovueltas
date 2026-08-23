@@ -58,7 +58,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 ])
 
 # ---------------------------------------------------------
-# TAB 1: REGISTRAR VUELTA (CON NOTIFICACIÓN Y RESET DE 4 CAMPOS)
+# TAB 1: REGISTRAR VUELTA (CON RESET SEGURO Y NOTIFICACIÓN)
 # ---------------------------------------------------------
 with tab1:
     st.subheader("Agregar Vuelta")
@@ -118,14 +118,15 @@ with tab1:
             df_servicios = pd.concat([df_servicios, pd.DataFrame([nueva_fila])], ignore_index=True)
             df_servicios.to_csv(FILE_SERVICIOS, index=False)
             
-            # Reset de los 4 campos requeridos:
-            st.session_state["origen_input"] = ""
-            st.session_state["destino_input"] = ""
-            st.session_state["precio_input"] = 0.0
-            if lista_cli:
-                st.session_state["cli_sel_key"] = lista_cli[0]
-            
+            # Notificación flotante de confirmación
             st.toast(f"✅ Vuelta #{nuevo_id} guardada con éxito", icon="🛵")
+
+            # Eliminación segura de las claves para limpiar las entradas en el siguiente ciclo
+            if "origen_input" in st.session_state: del st.session_state["origen_input"]
+            if "destino_input" in st.session_state: del st.session_state["destino_input"]
+            if "precio_input" in st.session_state: del st.session_state["precio_input"]
+            if "cli_sel_key" in st.session_state and lista_cli: del st.session_state["cli_sel_key"]
+
             st.rerun()
         else:
             st.error("⚠️ Debes ingresar al menos el destino de la carrera.")
