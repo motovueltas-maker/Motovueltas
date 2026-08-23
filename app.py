@@ -65,8 +65,7 @@ opcion_menu = st.sidebar.radio(
 # ---------------------------------------------------------
 # TAB 1: REGISTRAR VUELTA (FECHA, MOTORIZADO Y COMISIÓN ARRIBA)
 # ---------------------------------------------------------
-with tab1:
-    st.subheader("Agregar Vuelta")
+if opcion_menu == "🛵 Registrar Vuelta":
     
     # 1. Fila superior fija: Fecha, Motorizado y Porcentaje de Comisión
     col_top1, col_top2, col_top3 = st.columns(3)
@@ -160,7 +159,7 @@ with tab1:
 # ---------------------------------------------------------
 # TAB 2: VALIDAR PRECIOS Y EDITAR VUELTAS CON VISUALIZACIÓN
 # ---------------------------------------------------------
-with tab2:
+elif opcion_menu == "✅ Validar Precios":
     st.subheader("Validación y Corrección de Vueltas")
     
     # 1. VUELTAS PENDIENTES POR VALIDAR
@@ -304,7 +303,7 @@ with tab2:
 # ---------------------------------------------------------
 # TAB 3: CORTE CLIENTES, ABONOS Y ENVÍO DIRECTO A WHATSAPP
 # ---------------------------------------------------------
-with tab3:
+elif opcion_menu == "💵 Corte Clientes":
     st.subheader("Corte de Cuenta Clientes")
     
     FILE_ABONOS = "abonos_clientes.csv"
@@ -441,7 +440,7 @@ with tab3:
 # ---------------------------------------------------------
 # TAB 4: LIQUIDACIÓN MOTORIZADOS CON GESTIÓN DE AVANCES
 # ---------------------------------------------------------
-with tab4:
+elif opcion_menu == "🏍️ Liquidación Motorizados":
     st.subheader("Liquidación a Choferes")
     
     FILE_AVANCES = "avances.csv"
@@ -534,7 +533,7 @@ with tab4:
 # ---------------------------------------------------------
 # TAB 5: DIRECTORIO DE CLIENTES (FORMULARIO CON RESET NATIVO)
 # ---------------------------------------------------------
-with tab5:
+elif opcion_menu == "👥 Directorio Clientes":
     st.subheader("Directorio de Clientes")
 
     # 1. AGREGAR NUEVO CLIENTE (FORMULARIO DE RESET AUTOMÁTICO)
@@ -619,7 +618,7 @@ with tab5:
 # ---------------------------------------------------------
 # TAB 6: PERFILES DE MOTORIZADOS
 # ---------------------------------------------------------
-with tab6:
+elif opcion_menu == "⚙️ Perfiles Motorizados":
     st.subheader("Perfiles y Comisiones Base")
     st.dataframe(df_motorizados, use_container_width=True)
     
