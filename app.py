@@ -286,68 +286,126 @@ with tab2:
             st.info("No se encontraron vueltas que coincidan con los filtros seleccionados.")
 
 # ---------------------------------------------------------
-# TAB 3: CORTE CLIENTES Y WHATSAPP CON FILTRO DE FECHAS
+# TAB 3: CORTE CLIENTES, ABONOS Y GENERACIÓN DE REPORTES
 # ---------------------------------------------------------
 with tab3:
     st.subheader("Corte de Cuenta Clientes")
     
+    FILE_ABONOS = "abonos_clientes.csv"
+    
+    # Cargar o crear el DataFrame de abonos de clientes
+    if os.path.exists(FILE_ABONOS):
+        df_abonos = pd.read_csv(FILE_ABONOS)
+    else:
+        df_abonos = pd.DataFrame(columns=['ID', 'Fecha', 'Cliente', 'Monto', 'Concepto', 'Estado'])
+        df_abonos.to_csv(FILE_ABONOS, index=False)
+
     validados_cli = df_servicios[(df_servicios['Estado_Validacion'] == 'Validado') & (df_servicios['Estado_Cliente'] == 'Pendiente')]
     
     if not validados_cli.empty:
         # 1. Filtros principales: Cliente y Rango de Fechas
         col_c1, col_c2, col_c3 = st.columns(3)
         with col_c1:
-            cli_corte = st.selectbox("Seleccionar Cliente", validados_cli['Cliente'].unique(), key="sel_cli_tab3")
+            cli_corte = st.selectbox("Seleccionar Cliente", sorted(validados_cli['Cliente'].unique().tolist()), key="sel_cli_tab3")
         with col_c2:
             f_inicio = st.date_input("Fecha Desde", value=None, key="f_ini_tab3")
         with col_c3:
             f_fin = st.date_input("Fecha Hasta", value=None, key="f_fin_tab3")
 
-        # 2. Filtrar DataFrame por cliente
+        # 2. Registrar Abono del Cliente
+        with st.expander(f"➕ Registrar Abono de {cli_corte}", expanded=False):
+            with st.form("form_abono_cliente", clear_on_submit=True):
+                col_ab1, col_ab2, col_ab3 = st.columns(3)
+                with col_ab1:
+                    f_abono = st.date_input("Fecha del Abono", key="f_ab_input", format="DD/MM/YYYY")
+                with col_ab2:
+                    monto_ab = st.number_input("Monto Abono ($)", min_value=0.0, step=0.50, key="m_ab_input")
+                with col_ab3:
+                    concepto_ab = st.text_input("Concepto / Observación", placeholder="Ej. Pago móvil, Transferencia", key="c_ab_input")
+                
+                guardar_ab_btn = st.form_submit_button("Guardar Abono", type="primary", use_container_width=True)
+            
+            if guardar_ab_btn:
+                if monto_ab > 0:
+                    nuevo_id_ab = len(df_abonos) + 1
+                    nuevo_reg_ab = {
+                        'ID': nuevo_id_ab,
+                        'Fecha': f_abono.strftime("%d/%m/%Y"),
+                        'Cliente': cli_corte,
+                        'Monto': float(monto_ab),
+                        'Concepto': concepto_ab.strip() if concepto_ab.strip() else "Abono a cuenta",
+                        'Estado': 'Pendiente'
+                    }
+                    df_abonos = pd.concat([df_abonos, pd.DataFrame([nuevo_reg_ab])], ignore_index=True)
+                    df_abonos.to_csv(FILE_ABONOS, index=False)
+                    st.toast(f"✅ Abono de ${monto_ab:.2f} registrado a {cli_corte}", icon="💵")
+                    st.rerun()
+                else:
+                    st.error("⚠️ El monto del abono debe ser mayor a $0.")
+
+        # 3. Filtrar DataFrame por cliente
         df_c = validados_cli[validados_cli['Cliente'] == cli_corte].copy()
-        
-        # Convertir columna Fecha a objeto datetime para filtrado preciso
         df_c['Fecha_dt'] = pd.to_datetime(df_c['Fecha'].astype(str).str[:10], errors='coerce')
 
-        # Aplicar filtro por rango de fechas
         if f_inicio is not None:
             df_c = df_c[df_c['Fecha_dt'] >= pd.to_datetime(f_inicio)]
         if f_fin is not None:
             df_c = df_c[df_c['Fecha_dt'] <= pd.to_datetime(f_fin)]
 
         if not df_c.empty:
-            total_deuda = df_c['Precio_Cliente'].sum()
-            st.metric("Total Deuda Período", f"${total_deuda:.2f}")
+            # Formatear fecha sencilla DD/MM
+            df_c['Fecha_Corta'] = df_c['Fecha_dt'].dt.strftime('%d/%m')
 
-            # 3. Cuadro / Tabla en tiempo real (Fecha, Motorizado, Origen, Destino, Precio)
-            st.write("##### 📋 Carreras del Período")
+            # Obtener abonos pendientes del cliente
+            df_ab_cli = df_abonos[(df_abonos['Cliente'] == cli_corte) & (df_abonos['Estado'] == 'Pendiente')] if not df_abonos.empty else pd.DataFrame()
+            total_vueltas_cli = df_c['Precio_Cliente'].sum()
+            total_abonos_cli = df_ab_cli['Monto'].sum() if not df_ab_cli.empty else 0.0
+            total_neto_cli = total_vueltas_cli - total_abonos_cli
+
+            # Métricas
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Acumulado Vueltas", f"${total_vueltas_cli:.2f}")
+            m2.metric("Total Abonos", f"-${total_abonos_cli:.2f}")
+            m3.metric("Neto a Cobrar", f"${total_neto_cli:.2f}")
+
+            # Tabla de Abonos si existen
+            if not df_ab_cli.empty:
+                st.write("##### 💵 Abonos Recibidos")
+                st.dataframe(df_ab_cli[['Fecha', 'Monto', 'Concepto']], use_container_width=True)
+
+            # 4. Tabla Vueltas Realizadas
+            st.write("##### 📋 Vueltas Realizadas")
             st.dataframe(
-                df_c[['Fecha', 'Motorizado', 'Origen', 'Destino', 'Precio_Cliente']], 
+                df_c[['Fecha_Corta', 'Motorizado', 'Origen', 'Destino', 'Precio_Cliente']].rename(columns={'Fecha_Corta': 'Fecha', 'Precio_Cliente': 'Precio ($)'}), 
                 use_container_width=True
             )
 
-            # 4. Generación del mensaje para WhatsApp
+            # 5. Generar mensaje de WhatsApp
             msj = f"*MOTOVUELTAS - Resumen de Cuenta*\nCliente: *{cli_corte}*\n---\n"
             for _, r in df_c.iterrows():
-                try:
-                    fecha_corta = pd.to_datetime(str(r['Fecha']).split()[0]).strftime('%d/%m')
-                except:
-                    fecha_corta = str(r['Fecha'])[:5]
-                msj += f"• [{fecha_corta}] {r['Motorizado']} | {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
+                msj += f"• [{r['Fecha_Corta']}] {r['Motorizado']} | {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
 
-            msj += f"---\n*TOTAL A PAGAR: ${total_deuda:.2f}*"
+            if total_abonos_cli > 0:
+                msj += f"---\nSubtotal Vueltas: ${total_vueltas_cli:.2f}\nAbonos Recibidos: -${total_abonos_cli:.2f}\n"
+
+            msj += f"---\n*TOTAL A PAGAR: ${total_neto_cli:.2f}*"
 
             st.text_area("Mensaje de WhatsApp para enviar:", msj, height=180)
 
-            # 5. Marcar como pagadas únicamente las vueltas filtradas
-            if st.button(f"Marcar {len(df_c)} Vueltas de {cli_corte} como PAGADAS", type="primary"):
+            # 6. Marcar corte como pagado
+            if st.button(f"Marcar Corte de {cli_corte} como PAGADO (${total_neto_cli:.2f})", type="primary"):
                 ids_a_pagar = df_c['ID'].tolist()
                 df_servicios.loc[df_servicios['ID'].isin(ids_a_pagar), 'Estado_Cliente'] = 'Pagado'
                 df_servicios.to_csv(FILE_SERVICIOS, index=False)
-                st.success("Corte del período registrado y guardado.")
+                
+                if not df_abonos.empty:
+                    df_abonos.loc[(df_abonos['Cliente'] == cli_corte) & (df_abonos['Estado'] == 'Pendiente'), 'Estado'] = 'Pagado'
+                    df_abonos.to_csv(FILE_ABONOS, index=False)
+
+                st.success("Corte y abonos procesados como PAGADOS correctamente.")
                 st.rerun()
         else:
-            st.warning("No hay vueltas registradas para este cliente en el rango de fechas seleccionado.")
+            st.warning("No hay vueltas registradas para este cliente en el rango seleccionado.")
     else:
         st.info("Sin cuentas pendientes por cobrar a clientes.")
 
