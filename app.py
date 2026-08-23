@@ -62,12 +62,54 @@ def cargar_datos():
 
 df_clientes, df_motorizados, df_servicios, df_usuarios = cargar_datos()
 
-# ✅ CÓDIGO NUEVO (Sidebar)
 st.title("🛵 MotoVueltas - Sistema de Gestión")
 
-opcion_menu = st.sidebar.radio(
-    "📌 Menú de Navegación",
-    [
+# ---------------------------------------------------------
+# CONTROL DE SESIÓN Y LOGIN DE USUARIOS
+# ---------------------------------------------------------
+if "usuario_logueado" not in st.session_state:
+    st.session_state["usuario_logueado"] = None
+    st.session_state["rol_usuario"] = None
+    st.session_state["nombre_usuario"] = None
+
+# Pantalla de Inicio de Sesión si no hay usuario activo
+if st.session_state["usuario_logueado"] is None:
+    st.subheader("🔐 Iniciar Sesión")
+    with st.form("form_login"):
+        user_input = st.text_input("Usuario (ej: esneyder, omar)").strip().lower()
+        pass_input = st.text_input("Contraseña", type="password")
+        btn_login = st.form_submit_button("Ingresar", type="primary", use_container_width=True)
+        
+        if btn_login:
+            match = df_usuarios[(df_usuarios['Usuario'] == user_input) & (df_usuarios['Clave'].astype(str) == pass_input)]
+            if not match.empty:
+                st.session_state["usuario_logueado"] = user_input
+                st.session_state["rol_usuario"] = match.iloc[0]['Rol']
+                st.session_state["nombre_usuario"] = match.iloc[0]['Nombre']
+                st.toast(f"Bienvenido {match.iloc[0]['Nombre']}", icon="👋")
+                st.rerun()
+            else:
+                st.error("⚠️ Usuario o contraseña incorrectos.")
+    st.stop() # Detiene la ejecución para no mostrar nada si no hay sesión
+
+# ---------------------------------------------------------
+# BARRA LATERAL CON INFORMACIÓN DEL USUARIO Y ROLES
+# ---------------------------------------------------------
+st.sidebar.markdown(f"👤 **{st.session_state['nombre_usuario']}**  \n*Rol: {st.session_state['rol_usuario']}*")
+if st.sidebar.button("Cerrar Sesión", type="secondary"):
+    st.session_state["usuario_logueado"] = None
+    st.session_state["rol_usuario"] = None
+    st.session_state["nombre_usuario"] = None
+    st.rerun()
+
+st.sidebar.write("---")
+
+# Definir opciones del menú según el Rol del usuario
+if st.session_state["rol_usuario"] == "Chofer":
+    opciones_disponibles = ["🛵 Registrar Vuelta"]
+else:
+    # Opciones completas para Administrador
+    opciones_disponibles = [
         "🛵 Registrar Vuelta",
         "✅ Validar Precios",
         "💵 Corte Clientes",
@@ -75,7 +117,8 @@ opcion_menu = st.sidebar.radio(
         "👥 Directorio Clientes",
         "⚙️ Perfiles Motorizados"
     ]
-)
+
+opcion_menu = st.sidebar.radio("📌 Menú de Navegación", opciones_disponibles)
 
 # ---------------------------------------------------------
 # TAB 1: REGISTRAR VUELTA (FECHA, MOTORIZADO Y COMISIÓN ARRIBA)
