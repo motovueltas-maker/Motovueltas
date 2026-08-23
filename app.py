@@ -153,7 +153,7 @@ with tab1:
             st.error("⚠️ Debes ingresar al menos el destino de la carrera.") 
             
 # ---------------------------------------------------------
-# TAB 2: VALIDAR PRECIOS Y EDITAR COMISIONES CON FILTROS
+# TAB 2: VALIDAR PRECIOS Y EDITAR VUELTAS (INCLUYE CLIENTE)
 # ---------------------------------------------------------
 with tab2:
     st.subheader("Validación y Corrección de Vueltas")
@@ -189,10 +189,10 @@ with tab2:
     else:
         st.info("No hay vueltas pendientes por validar.")
 
-    # 2. EDITAR VUELTAS YA REGISTRADAS CON FILTROS (PARA CORREGIR JHOINER)
+    # 2. EDITAR VUELTAS YA REGISTRADAS (MOTORIZADO, CLIENTE, PRECIO, COMISIÓN)
     if not df_servicios.empty:
         st.write("---")
-        st.write("### ✏️ Corregir/Editar Comisión de Vueltas Ya Registradas")
+        st.write("### ✏️ Corregir/Editar Vueltas Ya Registradas")
         
         # Filtros de búsqueda para ubicar rápido las carreras
         col_f1, col_f2 = st.columns(2)
@@ -220,18 +220,31 @@ with tab2:
             idx_edit = df_filtrado[df_filtrado['Label_Edit'] == vuelta_sel_label].index[0]
             row_edit = df_servicios.loc[idx_edit]
             
-            col_ed1, col_ed2, col_ed3 = st.columns(3)
+            # Formulario de edición con 4 campos
+            col_ed1, col_ed2 = st.columns(2)
             with col_ed1:
-                edit_precio = st.number_input("Precio Cliente ($)", min_value=0.0, value=float(row_edit['Precio_Cliente']), step=0.50, key=f"edit_p_{row_edit['ID']}")
+                # Modificar Motorizado
+                lista_motos_edit = df_motorizados['Nombre'].tolist()
+                idx_m = lista_motos_edit.index(row_edit['Motorizado']) if row_edit['Motorizado'] in lista_motos_edit else 0
+                edit_moto = st.selectbox("Cambiar Motorizado", lista_motos_edit, index=idx_m, key=f"edit_m_{row_edit['ID']}")
+                
+                # Modificar Cliente
+                lista_cli_edit = df_clientes['Nombre'].tolist()
+                idx_c = lista_cli_edit.index(row_edit['Cliente']) if row_edit['Cliente'] in lista_cli_edit else 0
+                edit_cliente = st.selectbox("Cambiar Cliente", lista_cli_edit, index=idx_c, key=f"edit_cli_{row_edit['ID']}")
+
             with col_ed2:
+                edit_precio = st.number_input("Precio Cliente ($)", min_value=0.0, value=float(row_edit['Precio_Cliente']), step=0.50, key=f"edit_p_{row_edit['ID']}")
                 edit_comision = st.number_input("% Comisión Motorizado", min_value=0.0, max_value=100.0, value=float(row_edit['Porcentaje_Comision']), step=0.5, key=f"edit_c_{row_edit['ID']}")
-            with col_ed3:
-                nuevo_monto_moto = round(edit_precio * (edit_comision / 100.0), 2)
-                nueva_ganancia = round(edit_precio - nuevo_monto_moto, 2)
-                st.write(f"Pago Chofer: **${nuevo_monto_moto:.2f}**")
-                st.write(f"Ganancia Empresa: **${nueva_ganancia:.2f}**")
+
+            nuevo_monto_moto = round(edit_precio * (edit_comision / 100.0), 2)
+            nueva_ganancia = round(edit_precio - nuevo_monto_moto, 2)
+            
+            st.caption(f"💡 Nuevo Pago Chofer: **${nuevo_monto_moto:.2f}** | Nueva Ganancia Empresa: **${nueva_ganancia:.2f}**")
 
             if st.button("Guardar Cambios de esta Vuelta", type="primary", key=f"btn_save_{row_edit['ID']}"):
+                df_servicios.at[idx_edit, 'Motorizado'] = edit_moto
+                df_servicios.at[idx_edit, 'Cliente'] = edit_cliente
                 df_servicios.at[idx_edit, 'Precio_Cliente'] = edit_precio
                 df_servicios.at[idx_edit, 'Porcentaje_Comision'] = edit_comision
                 df_servicios.at[idx_edit, 'Monto_Motorizado'] = nuevo_monto_moto
