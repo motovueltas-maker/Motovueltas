@@ -153,19 +153,17 @@ with tab1:
             st.error("⚠️ Debes ingresar al menos el destino de la carrera.") 
             
 # ---------------------------------------------------------
-# TAB 2: VALIDAR PRECIOS (ADMINISTRADOR)
+# TAB 2: VALIDAR PRECIOS Y EDITAR COMISIONES REGISTRADAS
 # ---------------------------------------------------------
 with tab2:
     st.subheader("Validación de Vueltas por el Administrador")
     
+    # 1. VUELTAS PENDIENTES POR VALIDAR
     vueltas_pendientes = df_servicios[df_servicios['Estado_Validacion'] == 'Pendiente']
-    
     if not vueltas_pendientes.empty:
         for idx, row in vueltas_pendientes.iterrows():
             with st.expander(f"Vuelta #{row['ID']} - {row['Motorizado']} -> {row['Cliente']} ({row['Origen']} a {row['Destino']})", expanded=True):
                 st.write(f"**Fecha:** {row['Fecha']} | **Detalle:** {row['Detalle']}")
-                
-                # Obtener porcentaje predeterminado del perfil del motorizado
                 com_base = df_motorizados.loc[df_motorizados['Nombre'] == row['Motorizado'], 'Comision_Base'].values
                 com_val = float(com_base[0]) if len(com_base) > 0 else 66.67
                 
@@ -173,20 +171,15 @@ with tab2:
                 with col_v1:
                     precio = st.number_input(f"Precio Cliente ($) [ID #{row['ID']}]", min_value=0.0, value=0.0, step=0.50, key=f"p_{row['ID']}")
                 with col_v2:
-                    comision = st.number_input(f"% Comisión [ID #{row['ID']}]", min_value=0.0, max_value=100.0, value=com_val, step=1.0, key=f"c_{row['ID']}")
+                    comision = st.number_input(f"% Comisión [ID #{row['ID']}]", min_value=0.0, max_value=100.0, value=com_val, step=0.5, key=f"c_{row['ID']}")
                 
                 monto_moto = round(precio * (comision / 100.0), 2)
                 ganancia_emp = round(precio - monto_moto, 2)
-                
                 st.write(f"Pago Chofer: **${monto_moto:.2f}** | Ganancia MotoVueltas: **${ganancia_emp:.2f}**")
                 
                 if st.button(f"Validar Vuelta #{row['ID']}", type="primary", key=f"btn_{row['ID']}"):
                     if precio > 0:
-                        df_servicios.loc[df_servicios['ID'] == row['ID'], [
-                            'Precio_Cliente', 'Porcentaje_Comision', 'Monto_Motorizado', 
-                            'Ganancia_Empresa', 'Estado_Validacion'
-                        ]] = [precio, comision, monto_moto, ganancia_emp, 'Validado']
-                        
+                        df_servicios.loc[df_servicios['ID'] == row['ID'], ['Precio_Cliente', 'Porcentaje_Comision', 'Monto_Motorizado', 'Ganancia_Empresa', 'Estado_Validacion']] = [precio, comision, monto_moto, ganancia_emp, 'Validado']
                         df_servicios.to_csv(FILE_SERVICIOS, index=False)
                         st.success(f"Vuelta #{row['ID']} validada correctamente.")
                         st.rerun()
@@ -194,6 +187,43 @@ with tab2:
                         st.error("Ingresa un precio mayor a $0 para validar.")
     else:
         st.info("No hay vueltas pendientes por validar.")
+
+    # 2. SECCIÓN PARA EDITAR VUELTAS YA REGISTRADAS (PARA CORREGIR JHOINER)
+    if not df_servicios.empty:
+        st.write("---")
+        st.write("### ✏️ Corregir/Editar Comisión de Vueltas Ya Registradas")
+        
+        # Etiqueta descriptiva para buscar la vuelta
+        df_servicios['Label_Edit'] = "Vuelta #" + df_servicios['ID'].astype(str) + " - " + df_servicios['Motorizado'] + " (" + df_servicios['Cliente'] + ") - $" + df_servicios['Precio_Cliente'].astype(str)
+        lista_opciones = df_servicios['Label_Edit'].tolist()
+        
+        vuelta_sel_label = st.selectbox("Selecciona la Vuelta a Modificar", lista_opciones)
+        idx_edit = df_servicios[df_servicios['Label_Edit'] == vuelta_sel_label].index[0]
+        row_edit = df_servicios.loc[idx_edit]
+        
+        col_ed1, col_ed2, col_ed3 = st.columns(3)
+        with col_ed1:
+            edit_precio = st.number_input("Precio Cliente ($)", min_value=0.0, value=float(row_edit['Precio_Cliente']), step=0.50, key="edit_p")
+        with col_ed2:
+            edit_comision = st.number_input("% Comisión Motorizado", min_value=0.0, max_value=100.0, value=float(row_edit['Porcentaje_Comision']), step=0.5, key="edit_c")
+        with col_ed3:
+            nuevo_monto_moto = round(edit_precio * (edit_comision / 100.0), 2)
+            nueva_ganancia = round(edit_precio - nuevo_monto_moto, 2)
+            st.write(f"Pago Chofer: **${nuevo_monto_moto:.2f}**")
+            st.write(f"Ganancia Empresa: **${nueva_ganancia:.2f}**")
+
+        if st.button("Guardar Cambios de esta Vuelta", type="primary"):
+            df_servicios.at[idx_edit, 'Precio_Cliente'] = edit_precio
+            df_servicios.at[idx_edit, 'Porcentaje_Comision'] = edit_comision
+            df_servicios.at[idx_edit, 'Monto_Motorizado'] = nuevo_monto_moto
+            df_servicios.at[idx_edit, 'Ganancia_Empresa'] = nueva_ganancia
+            
+            if 'Label_Edit' in df_servicios.columns:
+                df_servicios = df_servicios.drop(columns=['Label_Edit'])
+                
+            df_servicios.to_csv(FILE_SERVICIOS, index=False)
+            st.toast("✅ Vuelta actualizada correctamente", icon="✏️")
+            st.rerun()
 
 # ---------------------------------------------------------
 # TAB 3: CORTE CLIENTES Y WHATSAPP
