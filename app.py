@@ -409,7 +409,10 @@ with tab3:
                     else:
                         num_tlf_wa = num_tlf
                     
-                    link_wa = f"https://wa.me/{num_tlf_wa}?text={urllib.parse.quote(msj)}"
+                    # Reemplazo de caracteres especiales sin depender de urllib
+                    msj_encoded = msj.replace('\n', '%0A').replace(' ', '%20').replace('*', '%2A').replace('#', '%23')
+                    link_wa = f"https://wa.me/{num_tlf_wa}?text={msj_encoded}"
+                    
                     st.link_button("📲 Enviar por WhatsApp", link_wa, type="secondary", use_container_width=True)
                 else:
                     st.warning("⚠️ Sin número registrado en Clientes para envío directo.")
