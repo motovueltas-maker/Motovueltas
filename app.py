@@ -58,25 +58,29 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 ])
 
 # ---------------------------------------------------------
-# TAB 1: REGISTRAR VUELTA (CON FORMULARIO Y RESET NATIVO)
+# TAB 1: REGISTRAR VUELTA (FECHA Y MOTORIZADO ARRIBA + CLIENTE EN BLANCO)
 # ---------------------------------------------------------
 with tab1:
     st.subheader("Agregar Vuelta")
     
-    fecha_operativa = st.date_input("Fecha de las carreras", key="fecha_carreras_fija", format="DD/MM/YYYY")
-    
-    # Formulario con limpieza automática al presionar enviar
+    # Fila superior externa: Fecha y Motorizado precargados
+    col_top1, col_top2 = st.columns(2)
+    with col_top1:
+        fecha_operativa = st.date_input("Fecha de las carreras", key="fecha_carreras_fija", format="DD/MM/YYYY")
+    with col_top2:
+        lista_motos = df_motorizados['Nombre'].tolist()
+        moto_sel = st.selectbox("Motorizado", lista_motos, key="moto_carreras_fija")
+
+    # Formulario con reseteo automático de entradas
     with st.form("form_agregar_vuelta", clear_on_submit=True):
+        # Lista de clientes con opción vacía por defecto
+        lista_cli = [""] + df_clientes['Nombre'].tolist()
+        cli_sel = st.selectbox("Seleccionar Cliente", lista_cli, index=0)
+        
         col1, col2 = st.columns(2)
         with col1:
-            lista_motos = df_motorizados['Nombre'].tolist()
-            moto_sel = st.selectbox("Motorizado", lista_motos)
-            
-            lista_cli = df_clientes['Nombre'].tolist()
-            cli_sel = st.selectbox("Seleccionar Cliente", lista_cli)
-            
-        with col2:
             origen = st.text_input("Desde", placeholder="Local")
+        with col2:
             destino = st.text_input("Hasta", placeholder="Local")
 
         precio_directo = st.number_input("Precio Cliente ($) (Opcional - Valida de inmediato si > 0)", min_value=0.0, value=0.0, step=0.50)
@@ -90,6 +94,7 @@ with tab1:
             
             origen_final = origen.strip() if origen.strip() else "Local"
             destino_final = destino.strip() if destino.strip() else "Local"
+            cliente_final = cli_sel if cli_sel else "Cliente General"
             
             com_base = df_motorizados.loc[df_motorizados['Nombre'] == moto_sel, 'Comision_Base'].values
             comision_val = float(com_base[0]) if len(com_base) > 0 else 66.67
@@ -107,7 +112,7 @@ with tab1:
                 'ID': nuevo_id,
                 'Fecha': fecha_final,
                 'Motorizado': moto_sel,
-                'Cliente': cli_sel,
+                'Cliente': cliente_final,
                 'Origen': origen_final,
                 'Destino': destino_final,
                 'Detalle': "-",
@@ -122,7 +127,6 @@ with tab1:
             df_servicios = pd.concat([df_servicios, pd.DataFrame([nueva_fila])], ignore_index=True)
             df_servicios.to_csv(FILE_SERVICIOS, index=False)
             
-            # Notificaciones inmediatas en pantalla
             if estado_val == "Validado":
                 st.success(f"✅ ¡Vuelta #{nuevo_id} guardada y VALIDADA por ${precio_directo:.2f}!")
             else:
