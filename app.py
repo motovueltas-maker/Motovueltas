@@ -58,7 +58,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 ])
 
 # ---------------------------------------------------------
-# TAB 1: REGISTRAR VUELTA (CON OPCIÓN DE VALIDACIÓN DIRECTA)
+# TAB 1: REGISTRAR VUELTA (CON NOTIFICACIÓN Y RESET DE 4 CAMPOS)
 # ---------------------------------------------------------
 with tab1:
     st.subheader("Agregar Vuelta")
@@ -68,17 +68,16 @@ with tab1:
     col1, col2 = st.columns(2)
     with col1:
         lista_motos = df_motorizados['Nombre'].tolist()
-        moto_sel = st.selectbox("Motorizado", lista_motos)
+        moto_sel = st.selectbox("Motorizado", lista_motos, key="moto_sel_key")
         
         lista_cli = df_clientes['Nombre'].tolist()
-        cli_sel = st.selectbox("Seleccionar Cliente", lista_cli)
+        cli_sel = st.selectbox("Seleccionar Cliente", lista_cli, key="cli_sel_key")
         
     with col2:
-        origen = st.text_input("Desde", placeholder="Local")
-        destino = st.text_input("Hasta", placeholder="Local")
+        origen = st.text_input("Desde", placeholder="Local", key="origen_input")
+        destino = st.text_input("Hasta", placeholder="Local", key="destino_input")
 
-    # Campo de Precio (Opcional si eres Admin o deseas validar de una vez)
-    precio_directo = st.number_input("Precio Cliente ($) (Opcional - Valida de inmediato si > 0)", min_value=0.0, value=0.0, step=0.50)
+    precio_directo = st.number_input("Precio Cliente ($) (Opcional - Valida de inmediato si > 0)", min_value=0.0, value=0.0, step=0.50, key="precio_input")
 
     if st.button("Guardar Vuelta", type="primary", use_container_width=True):
         if destino.strip() or origen.strip():
@@ -88,11 +87,9 @@ with tab1:
             origen_final = origen.strip() if origen.strip() else "Local"
             destino_final = destino.strip() if destino.strip() else "Local"
             
-            # Obtener comisión predeterminada del motorizado
             com_base = df_motorizados.loc[df_motorizados['Nombre'] == moto_sel, 'Comision_Base'].values
             comision_val = float(com_base[0]) if len(com_base) > 0 else 66.67
             
-            # Si le colocas un precio mayor a 0, queda Validada automáticamente
             if precio_directo > 0:
                 monto_moto = round(precio_directo * (comision_val / 100.0), 2)
                 ganancia_emp = round(precio_directo - monto_moto, 2)
@@ -121,13 +118,17 @@ with tab1:
             df_servicios = pd.concat([df_servicios, pd.DataFrame([nueva_fila])], ignore_index=True)
             df_servicios.to_csv(FILE_SERVICIOS, index=False)
             
-            if estado_val == "Validado":
-                st.success(f"¡Vuelta #{nuevo_id} guardada y VALIDADA automáticamente por ${precio_directo:.2f}!")
-            else:
-                st.success(f"¡Vuelta #{nuevo_id} guardada (Pendiente por precio)!")
+            # Reset de los 4 campos requeridos:
+            st.session_state["origen_input"] = ""
+            st.session_state["destino_input"] = ""
+            st.session_state["precio_input"] = 0.0
+            if lista_cli:
+                st.session_state["cli_sel_key"] = lista_cli[0]
+            
+            st.toast(f"✅ Vuelta #{nuevo_id} guardada con éxito", icon="🛵")
             st.rerun()
         else:
-            st.error("⚠️ Debes ingresar al menos el destino de la carrera.") 
+            st.error("⚠️ Debes ingresar al menos el destino de la carrera.")
             
 # ---------------------------------------------------------
 # TAB 2: VALIDAR PRECIOS (ADMINISTRADOR)
