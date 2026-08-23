@@ -192,7 +192,13 @@ with tab3:
         
         msj = f"*MOTOVUELTAS - Resumen de Cuenta*\nCliente: *{cli_corte}*\n---\n"
         for _, r in df_c.iterrows():
-            msj += f"• {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
+    # Extraer DD/MM si la fecha está guardada como 'AAAA-MM-DD' o 'DD/MM/AAAA'
+    try:
+        fecha_corta = pd.to_datetime(str(r['Fecha']).split()[0]).strftime('%d/%m')
+    except:
+        fecha_corta = str(r['Fecha'])[:5]
+        
+    msj += f"• [{fecha_corta}] {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
         msj += f"---\n*TOTAL A PAGAR: ${total_deuda:.2f}*"
         
         st.text_area("Mensaje de WhatsApp:", msj, height=150)
