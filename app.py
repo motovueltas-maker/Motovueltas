@@ -153,7 +153,7 @@ with tab1:
             st.error("⚠️ Debes ingresar al menos el destino de la carrera.") 
             
 # ---------------------------------------------------------
-# TAB 2: VALIDAR PRECIOS Y EDITAR VUELTAS (INCLUYE CLIENTE)
+# TAB 2: VALIDAR PRECIOS Y EDITAR VUELTAS (3 FILTROS INCLUIDOS)
 # ---------------------------------------------------------
 with tab2:
     st.subheader("Validación y Corrección de Vueltas")
@@ -189,24 +189,30 @@ with tab2:
     else:
         st.info("No hay vueltas pendientes por validar.")
 
-    # 2. EDITAR VUELTAS YA REGISTRADAS (MOTORIZADO, CLIENTE, PRECIO, COMISIÓN)
+    # 2. EDITAR VUELTAS YA REGISTRADAS (FILTROS POR MOTORIZADO, CLIENTE Y FECHA)
     if not df_servicios.empty:
         st.write("---")
         st.write("### ✏️ Corregir/Editar Vueltas Ya Registradas")
         
-        # Filtros de búsqueda para ubicar rápido las carreras
-        col_f1, col_f2 = st.columns(2)
+        # Filtros de búsqueda en 3 columnas
+        col_f1, col_f2, col_f3 = st.columns(3)
         with col_f1:
             lista_mots_filtro = ["Todos"] + sorted(df_servicios['Motorizado'].dropna().unique().tolist())
             filtro_moto = st.selectbox("Filtrar por Motorizado", lista_mots_filtro, key="f_moto_tab2")
         with col_f2:
+            lista_clis_filtro = ["Todos"] + sorted(df_servicios['Cliente'].dropna().unique().tolist())
+            filtro_cliente = st.selectbox("Filtrar por Cliente", lista_clis_filtro, key="f_cli_tab2")
+        with col_f3:
             filtro_fecha = st.date_input("Filtrar por Fecha", value=None, key="f_fecha_tab2")
 
-        # Aplicar filtros sobre el DataFrame
+        # Aplicar filtros acumulativos sobre el DataFrame
         df_filtrado = df_servicios.copy()
         
         if filtro_moto != "Todos":
             df_filtrado = df_filtrado[df_filtrado['Motorizado'] == filtro_moto]
+            
+        if filtro_cliente != "Todos":
+            df_filtrado = df_filtrado[df_filtrado['Cliente'] == filtro_cliente]
             
         if filtro_fecha is not None:
             fecha_str = filtro_fecha.strftime("%Y-%m-%d")
@@ -220,7 +226,7 @@ with tab2:
             idx_edit = df_filtrado[df_filtrado['Label_Edit'] == vuelta_sel_label].index[0]
             row_edit = df_servicios.loc[idx_edit]
             
-            # Formulario de edición con 4 campos
+            # Formulario de edición
             col_ed1, col_ed2 = st.columns(2)
             with col_ed1:
                 # Modificar Motorizado
