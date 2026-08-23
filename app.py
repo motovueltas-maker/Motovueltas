@@ -262,12 +262,14 @@ with tab5:
                 df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
                 df_clientes.to_csv(FILE_CLIENTES, index=False)
 
-                # Reset automático de los 3 recuadros de entrada
-                st.session_state["nuevo_cli_nom_key"] = ""
-                st.session_state["nuevo_cli_tel_key"] = ""
-                st.session_state["nuevo_cli_ubi_key"] = ""
-
+                # Notificación flotante de confirmación
                 st.toast(f"✅ Cliente '{nom_limpio}' registrado con éxito", icon="👤")
+                
+                # Eliminación segura de las claves para que los campos vuelvan limpios
+                del st.session_state["nuevo_cli_nom_key"]
+                del st.session_state["nuevo_cli_tel_key"]
+                del st.session_state["nuevo_cli_ubi_key"]
+
                 st.rerun()
 
     # 2. EDITAR / ACTUALIZAR CLIENTE EXISTENTE (SEGUNDO)
