@@ -12,6 +12,7 @@ st.set_page_config(page_title="MotoVueltas - Control Operativo", layout="wide", 
 FILE_CLIENTES = "clientes.csv"
 FILE_MOTORIZADOS = "motorizados.csv"
 FILE_SERVICIOS = "servicios.csv"
+FILE_USUARIOS = "usuarios.csv"
 
 def cargar_datos():
     if os.path.exists(FILE_CLIENTES):
@@ -22,6 +23,7 @@ def cargar_datos():
     else:
         df_cli = pd.DataFrame([{"Nombre": "Cliente General", "Telefono": "04140000000", "Ubicacion": "Centro"}])
         df_cli.to_csv(FILE_CLIENTES, index=False)
+
     if os.path.exists(FILE_MOTORIZADOS):
         df_mot = pd.read_csv(FILE_MOTORIZADOS)
     else:
@@ -29,7 +31,8 @@ def cargar_datos():
             {"Nombre": "Omar", "Comision_Base": 66.67},
             {"Nombre": "Jhoiner", "Comision_Base": 66.67},
             {"Nombre": "Deiby", "Comision_Base": 66.67},
-            {"Nombre": "Génesis", "Comision_Base": 66.67}
+            {"Nombre": "Génesis", "Comision_Base": 66.67},
+            {"Nombre": "Esneyder", "Comision_Base": 100.0}
         ])
         df_mot.to_csv(FILE_MOTORIZADOS, index=False)
 
@@ -38,14 +41,26 @@ def cargar_datos():
     else:
         df_ser = pd.DataFrame(columns=[
             'ID', 'Fecha', 'Motorizado', 'Cliente', 'Origen', 'Destino', 'Detalle',
-            'Precio_Cliente', 'Porcentaje_Comision', 'Monto_Motorizado', 'Ganancia_Empresa',
-            'Estado_Validacion', 'Estado_Cliente', 'Estado_Motorizado'
+            'Precio_Cliente', 'Porcentaje_Comision', 'Monto_Motorizado',
+            'Ganancia_Empresa', 'Estado_Validacion', 'Estado_Cliente', 'Estado_Motorizado'
         ])
         df_ser.to_csv(FILE_SERVICIOS, index=False)
 
-    return df_cli, df_mot, df_ser
+    if os.path.exists(FILE_USUARIOS):
+        df_usr = pd.read_csv(FILE_USUARIOS)
+    else:
+        df_usr = pd.DataFrame([
+            {"Usuario": "esneyder", "Clave": "1234", "Nombre": "Esneyder", "Rol": "Admin"},
+            {"Usuario": "omar", "Clave": "1234", "Nombre": "Omar", "Rol": "Chofer"},
+            {"Usuario": "jhoiner", "Clave": "1234", "Nombre": "Jhoiner", "Rol": "Chofer"},
+            {"Usuario": "deiby", "Clave": "1234", "Nombre": "Deiby", "Rol": "Chofer"},
+            {"Usuario": "genesis", "Clave": "1234", "Nombre": "Génesis", "Rol": "Chofer"}
+        ])
+        df_usr.to_csv(FILE_USUARIOS, index=False)
 
-df_clientes, df_motorizados, df_servicios = cargar_datos()
+    return df_cli, df_mot, df_ser, df_usr
+
+df_clientes, df_motorizados, df_servicios, df_usuarios = cargar_datos()
 
 # ✅ CÓDIGO NUEVO (Sidebar)
 st.title("🛵 MotoVueltas - Sistema de Gestión")
