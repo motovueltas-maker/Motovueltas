@@ -286,14 +286,13 @@ with tab2:
             st.info("No se encontraron vueltas que coincidan con los filtros seleccionados.")
 
 # ---------------------------------------------------------
-# TAB 3: CORTE CLIENTES, ABONOS Y GENERACIÓN DE REPORTES
+# TAB 3: CORTE CLIENTES, ABONOS Y ENVÍO DIRECTO A WHATSAPP
 # ---------------------------------------------------------
 with tab3:
     st.subheader("Corte de Cuenta Clientes")
     
     FILE_ABONOS = "abonos_clientes.csv"
     
-    # Cargar o crear el DataFrame de abonos de clientes
     if os.path.exists(FILE_ABONOS):
         df_abonos = pd.read_csv(FILE_ABONOS)
     else:
@@ -353,10 +352,9 @@ with tab3:
             df_c = df_c[df_c['Fecha_dt'] <= pd.to_datetime(f_fin)]
 
         if not df_c.empty:
-            # Formatear fecha sencilla DD/MM
             df_c['Fecha_Corta'] = df_c['Fecha_dt'].dt.strftime('%d/%m')
 
-            # Obtener abonos pendientes del cliente
+            # Obtener abonos pendientes
             df_ab_cli = df_abonos[(df_abonos['Cliente'] == cli_corte) & (df_abonos['Estado'] == 'Pendiente')] if not df_abonos.empty else pd.DataFrame()
             total_vueltas_cli = df_c['Precio_Cliente'].sum()
             total_abonos_cli = df_ab_cli['Monto'].sum() if not df_ab_cli.empty else 0.0
@@ -368,42 +366,66 @@ with tab3:
             m2.metric("Total Abonos", f"-${total_abonos_cli:.2f}")
             m3.metric("Neto a Cobrar", f"${total_neto_cli:.2f}")
 
-            # Tabla de Abonos si existen
+            # Tabla de Abonos
             if not df_ab_cli.empty:
                 st.write("##### 💵 Abonos Recibidos")
                 st.dataframe(df_ab_cli[['Fecha', 'Monto', 'Concepto']], use_container_width=True)
 
-            # 4. Tabla Vueltas Realizadas
+            # Tabla Vueltas Realizadas
             st.write("##### 📋 Vueltas Realizadas")
             st.dataframe(
-                df_c[['Fecha_Corta', 'Motorizado', 'Origen', 'Destino', 'Precio_Cliente']].rename(columns={'Fecha_Corta': 'Fecha', 'Precio_Cliente': 'Precio ($)'}), 
+                df_c[['Fecha_Corta', 'Origen', 'Destino', 'Precio_Cliente']].rename(columns={'Fecha_Corta': 'Fecha', 'Precio_Cliente': 'Precio ($)'}), 
                 use_container_width=True
             )
 
-            # 5. Generar mensaje de WhatsApp
+            # 4. Generar mensaje de WhatsApp (Sin motorizado)
             msj = f"*MOTOVUELTAS - Resumen de Cuenta*\nCliente: *{cli_corte}*\n---\n"
             for _, r in df_c.iterrows():
-                msj += f"• [{r['Fecha_Corta']}] {r['Motorizado']} | {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
+                msj += f"• [{r['Fecha_Corta']}] {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
 
             if total_abonos_cli > 0:
                 msj += f"---\nSubtotal Vueltas: ${total_vueltas_cli:.2f}\nAbonos Recibidos: -${total_abonos_cli:.2f}\n"
 
             msj += f"---\n*TOTAL A PAGAR: ${total_neto_cli:.2f}*"
 
-            st.text_area("Mensaje de WhatsApp para enviar:", msj, height=180)
+            st.text_area("Mensaje de WhatsApp preparado:", msj, height=180)
 
-            # 6. Marcar corte como pagado
-            if st.button(f"Marcar Corte de {cli_corte} como PAGADO (${total_neto_cli:.2f})", type="primary"):
-                ids_a_pagar = df_c['ID'].tolist()
-                df_servicios.loc[df_servicios['ID'].isin(ids_a_pagar), 'Estado_Cliente'] = 'Pagado'
-                df_servicios.to_csv(FILE_SERVICIOS, index=False)
-                
-                if not df_abonos.empty:
-                    df_abonos.loc[(df_abonos['Cliente'] == cli_corte) & (df_abonos['Estado'] == 'Pendiente'), 'Estado'] = 'Pagado'
-                    df_abonos.to_csv(FILE_ABONOS, index=False)
+            # 5. Obtener teléfono del cliente y generar enlace a WhatsApp
+            row_cli = df_clientes[df_clientes['Nombre'] == cli_corte]
+            num_tlf = ""
+            if not row_cli.empty:
+                # Intentar leer columna Telefono o Contacto
+                col_num = 'Telefono' if 'Telefono' in row_cli.columns else ('Contacto' if 'Contacto' in row_cli.columns else None)
+                if col_num:
+                    num_tlf = str(row_cli[col_num].values[0]).replace("+", "").replace(" ", "").replace("-", "").strip()
 
-                st.success("Corte y abonos procesados como PAGADOS correctamente.")
-                st.rerun()
+            col_btn1, col_btn2 = st.columns(2)
+            
+            with col_btn1:
+                if num_tlf and num_tlf != "nan":
+                    # Si empieza por 04xx (Venezuela), anteponer código 58
+                    if num_tlf.startswith("0"):
+                        num_tlf_wa = "58" + num_tlf[1:]
+                    else:
+                        num_tlf_wa = num_tlf
+                    
+                    link_wa = f"https://wa.me/{num_tlf_wa}?text={urllib.parse.quote(msj)}"
+                    st.link_button("📲 Enviar por WhatsApp", link_wa, type="secondary", use_container_width=True)
+                else:
+                    st.warning("⚠️ Sin número registrado en Clientes para envío directo.")
+
+            with col_btn2:
+                if st.button(f"Marcar Corte de {cli_corte} como PAGADO (${total_neto_cli:.2f})", type="primary", use_container_width=True):
+                    ids_a_pagar = df_c['ID'].tolist()
+                    df_servicios.loc[df_servicios['ID'].isin(ids_a_pagar), 'Estado_Cliente'] = 'Pagado'
+                    df_servicios.to_csv(FILE_SERVICIOS, index=False)
+                    
+                    if not df_abonos.empty:
+                        df_abonos.loc[(df_abonos['Cliente'] == cli_corte) & (df_abonos['Estado'] == 'Pendiente'), 'Estado'] = 'Pagado'
+                        df_abonos.to_csv(FILE_ABONOS, index=False)
+
+                    st.success("Corte y abonos procesados como PAGADOS correctamente.")
+                    st.rerun()
         else:
             st.warning("No hay vueltas registradas para este cliente en el rango seleccionado.")
     else:
