@@ -58,22 +58,38 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 ])
 
 # ---------------------------------------------------------
-# TAB 1: REGISTRAR VUELTA (FECHA Y MOTORIZADO ARRIBA + CLIENTE EN BLANCO)
+# TAB 1: REGISTRAR VUELTA (FECHA, MOTORIZADO Y COMISIÓN ARRIBA)
 # ---------------------------------------------------------
 with tab1:
     st.subheader("Agregar Vuelta")
     
-    # Fila superior externa: Fecha y Motorizado precargados
-    col_top1, col_top2 = st.columns(2)
+    # 1. Fila superior fija: Fecha, Motorizado y Porcentaje de Comisión
+    col_top1, col_top2, col_top3 = st.columns(3)
+    
     with col_top1:
         fecha_operativa = st.date_input("Fecha de las carreras", key="fecha_carreras_fija", format="DD/MM/YYYY")
+        
     with col_top2:
         lista_motos = df_motorizados['Nombre'].tolist()
         moto_sel = st.selectbox("Motorizado", lista_motos, key="moto_carreras_fija")
+        
+    with col_top3:
+        # Obtener la comisión por defecto registrada del motorizado seleccionado
+        com_base_sug = df_motorizados.loc[df_motorizados['Nombre'] == moto_sel, 'Comision_Base'].values
+        val_default = float(com_base_sug[0]) if len(com_base_sug) > 0 else 66.67
+        
+        # Campo porcentual ajustable manualmente
+        porcentaje_actual = st.number_input(
+            "Comisión Motorizado (%)", 
+            min_value=0.0, 
+            max_value=100.0, 
+            value=val_default, 
+            step=0.5,
+            key=f"comision_input_{moto_sel}"
+        )
 
-    # Formulario con reseteo automático de entradas
+    # 2. Formulario de la carrera (se limpia tras guardar)
     with st.form("form_agregar_vuelta", clear_on_submit=True):
-        # Lista de clientes con opción vacía por defecto
         lista_cli = [""] + df_clientes['Nombre'].tolist()
         cli_sel = st.selectbox("Seleccionar Cliente", lista_cli, index=0)
         
@@ -96,8 +112,8 @@ with tab1:
             destino_final = destino.strip() if destino.strip() else "Local"
             cliente_final = cli_sel if cli_sel else "Cliente General"
             
-            com_base = df_motorizados.loc[df_motorizados['Nombre'] == moto_sel, 'Comision_Base'].values
-            comision_val = float(com_base[0]) if len(com_base) > 0 else 66.67
+            # Usar el porcentaje definido en el campo superior
+            comision_val = round(float(porcentaje_actual), 2)
             
             if precio_directo > 0:
                 monto_moto = round(precio_directo * (comision_val / 100.0), 2)
@@ -128,13 +144,13 @@ with tab1:
             df_servicios.to_csv(FILE_SERVICIOS, index=False)
             
             if estado_val == "Validado":
-                st.success(f"✅ ¡Vuelta #{nuevo_id} guardada y VALIDADA por ${precio_directo:.2f}!")
+                st.success(f"✅ ¡Vuelta #{nuevo_id} guardada al {comision_val}% y VALIDADA por ${precio_directo:.2f}!")
             else:
-                st.info(f"ℹ️ Vuelta #{nuevo_id} guardada (Pendiente por validar precio).")
+                st.info(f"ℹ️ Vuelta #{nuevo_id} guardada al {comision_val}% (Pendiente por precio).")
                 
             st.toast(f"✅ Vuelta #{nuevo_id} registrada con éxito", icon="🛵")
         else:
-            st.error("⚠️ Debes ingresar al menos el destino de la carrera.")
+            st.error("⚠️ Debes ingresar al menos el destino de la carrera.") 
             
 # ---------------------------------------------------------
 # TAB 2: VALIDAR PRECIOS (ADMINISTRADOR)
