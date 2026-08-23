@@ -47,9 +47,9 @@ def cargar_datos():
 
 df_clientes, df_motorizados, df_servicios = cargar_datos()
 
+# ✅ CÓDIGO NUEVO (Sidebar)
 st.title("🛵 MotoVueltas - Sistema de Gestión")
 
-# 1. Menú lateral fijo
 opcion_menu = st.sidebar.radio(
     "📌 Menú de Navegación",
     [
@@ -61,28 +61,6 @@ opcion_menu = st.sidebar.radio(
         "⚙️ Perfiles Motorizados"
     ]
 )
-
-# 2. Control de pantallas según la selección
-if opcion_menu == "🛵 Registrar Vuelta":
-    st.subheader("Agregar Vuelta")
-    # Pega aquí todo el código que estaba dentro de 'with tab1:' (sin tab1)
-
-elif opcion_menu == "✅ Validar Precios":
-    st.subheader("Validación y Corrección de Vueltas")
-    # Pega aquí todo el código de 'with tab2:'
-
-elif opcion_menu == "💵 Corte Clientes":
-    st.subheader("Corte de Cuenta Clientes")
-    # Pega aquí todo el código de 'with tab3:'
-
-elif opcion_menu == "🏍️ Liquidación Motorizados":
-    # Pega aquí todo el código de 'with tab4:'
-
-elif opcion_menu == "👥 Directorio Clientes":
-    # Pega aquí todo el código de 'with tab5:'
-
-elif opcion_menu == "⚙️ Perfiles Motorizados":
-    # Pega aquí todo el código de 'with tab6:'
 
 # ---------------------------------------------------------
 # TAB 1: REGISTRAR VUELTA (FECHA, MOTORIZADO Y COMISIÓN ARRIBA)
