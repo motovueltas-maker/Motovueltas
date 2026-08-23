@@ -121,99 +121,101 @@ else:
 opcion_menu = st.sidebar.radio("📌 Menú de Navegación", opciones_disponibles)
 
 # ---------------------------------------------------------
-# TAB 1: REGISTRAR VUELTA (FECHA, MOTORIZADO Y COMISIÓN ARRIBA)
+# TAB 1: REGISTRAR VUELTA (ADAPTATIVO SEGÚN ROL)
 # ---------------------------------------------------------
 if opcion_menu == "🛵 Registrar Vuelta":
-    
-    # 1. Fila superior fija: Fecha, Motorizado y Porcentaje de Comisión
+    es_admin = (st.session_state.get("rol_usuario") == "Admin")
+    nombre_sesion = st.session_state.get("nombre_usuario", "")
+
+    # Configuración de controles superiores (Solo visibles para Admin)
     col_top1, col_top2, col_top3 = st.columns(3)
     
     with col_top1:
         fecha_operativa = st.date_input("Fecha de las carreras", key="fecha_carreras_fija", format="DD/MM/YYYY")
-        
-    with col_top2:
-        lista_motos = df_motorizados['Nombre'].tolist()
-        moto_sel = st.selectbox("Motorizado", lista_motos, key="moto_carreras_fija")
-        
-    with col_top3:
-        # Obtener la comisión por defecto registrada del motorizado seleccionado
+    
+    if es_admin:
+        with col_top2:
+            lista_motos = df_motorizados['Nombre'].tolist()
+            moto_sel = st.selectbox("Motorizado", lista_motos, key="moto_carreras_fija")
+        with col_top3:
+            com_base_sug = df_motorizados.loc[df_motorizados['Nombre'] == moto_sel, 'Comision_Base'].values
+            val_default = float(com_base_sug[0]) if len(com_base_sug) > 0 else 66.67
+            porcentaje_actual = st.number_input(
+                "Comisión Motorizado (%)", min_value=0.0, max_value=100.0, 
+                value=val_default, step=0.5, key=f"comision_input_{moto_sel}"
+            )
+    else:
+        # Si es Chofer, se fijan sus datos de forma oculta
+        moto_sel = nombre_sesion
         com_base_sug = df_motorizados.loc[df_motorizados['Nombre'] == moto_sel, 'Comision_Base'].values
-        val_default = float(com_base_sug[0]) if len(com_base_sug) > 0 else 66.67
-        
-        # Campo porcentual ajustable manualmente
-        porcentaje_actual = st.number_input(
-            "Comisión Motorizado (%)", 
-            min_value=0.0, 
-            max_value=100.0, 
-            value=val_default, 
-            step=0.5,
-            key=f"comision_input_{moto_sel}"
-        )
+        porcentaje_actual = float(com_base_sug[0]) if len(com_base_sug) > 0 else 66.67
+        st.info(f"🛵 Registrando vuelta para el chofer: **{moto_sel}**")
 
-    # 2. Formulario de la carrera (se limpia tras guardar)
+    # Formulario para precargar la carrera
     with st.form("form_agregar_vuelta", clear_on_submit=True):
         lista_cli = [""] + df_clientes['Nombre'].tolist()
         cli_sel = st.selectbox("Seleccionar Cliente", lista_cli, index=0)
         
         col1, col2 = st.columns(2)
         with col1:
-            origen = st.text_input("Desde", placeholder="Local")
+            origen = st.text_input("Desde", placeholder="Local u Origen")
         with col2:
-            destino = st.text_input("Hasta", placeholder="Local")
-
-        precio_directo = st.number_input("Precio Cliente ($) (Opcional - Valida de inmediato si > 0)", min_value=0.0, value=0.0, step=0.50)
-
-        guardar_btn = st.form_submit_button("Guardar Vuelta", type="primary", use_container_width=True)
-
-    if guardar_btn:
-        if destino.strip() or origen.strip():
-            nuevo_id = len(df_servicios) + 1
-            fecha_final = f"{fecha_operativa} {datetime.now().strftime('%H:%M')}"
-            
-            origen_final = origen.strip() if origen.strip() else "Local"
-            destino_final = destino.strip() if destino.strip() else "Local"
-            cliente_final = cli_sel if cli_sel else "Cliente General"
-            
-            # Usar el porcentaje definido en el campo superior
-            comision_val = round(float(porcentaje_actual), 2)
-            
-            if precio_directo > 0:
-                monto_moto = round(precio_directo * (comision_val / 100.0), 2)
-                ganancia_emp = round(precio_directo - monto_moto, 2)
-                estado_val = "Validado"
-            else:
-                monto_moto = 0.0
-                ganancia_emp = 0.0
-                estado_val = "Pendiente"
-
-            nueva_fila = {
-                'ID': nuevo_id,
-                'Fecha': fecha_final,
-                'Motorizado': moto_sel,
-                'Cliente': cliente_final,
-                'Origen': origen_final,
-                'Destino': destino_final,
-                'Detalle': "-",
-                'Precio_Cliente': precio_directo,
-                'Porcentaje_Comision': comision_val,
-                'Monto_Motorizado': monto_moto,
-                'Ganancia_Empresa': ganancia_emp,
-                'Estado_Validacion': estado_val,
-                'Estado_Cliente': 'Pendiente',
-                'Estado_Motorizado': 'Pendiente'
-            }
-            df_servicios = pd.concat([df_servicios, pd.DataFrame([nueva_fila])], ignore_index=True)
-            df_servicios.to_csv(FILE_SERVICIOS, index=False)
-            
-            if estado_val == "Validado":
-                st.success(f"✅ ¡Vuelta #{nuevo_id} guardada al {comision_val}% y VALIDADA por ${precio_directo:.2f}!")
-            else:
-                st.info(f"ℹ️ Vuelta #{nuevo_id} guardada al {comision_val}% (Pendiente por precio).")
-                
-            st.toast(f"✅ Vuelta #{nuevo_id} registrada con éxito", icon="🛵")
+            destino = st.text_input("Hasta", placeholder="Destino de la carrera")
+        
+        if es_admin:
+            precio_directo = st.number_input("Precio Cliente ($) (Opcional - Valida de inmediato si > 0)", min_value=0.0, value=0.0, step=0.50)
         else:
-            st.error("⚠️ Debes ingresar al menos el destino de la carrera.") 
+            precio_directo = 0.0  # Para los choferes siempre entra como $0 (Pendiente de validación)
             
+        guardar_btn = st.form_submit_button("Precargar Vuelta para Validación", type="primary", use_container_width=True)
+
+        if guardar_btn:
+            if destino.strip() or origen.strip():
+                nuevo_id = len(df_servicios) + 1
+                fecha_final = f"{fecha_operativa} {datetime.now().strftime('%H:%M')}"
+                origen_final = origen.strip() if origen.strip() else "Local"
+                destino_final = destino.strip() if destino.strip() else "Local"
+                cliente_final = cli_sel if cli_sel else "Cliente General"
+
+                comision_val = round(float(porcentaje_actual), 2)
+                
+                if precio_directo > 0 and es_admin:
+                    monto_moto = round(precio_directo * (comision_val / 100.0), 2)
+                    ganancia_emp = round(precio_directo - monto_moto, 2)
+                    estado_val = "Validado"
+                else:
+                    monto_moto = 0.0
+                    ganancia_emp = 0.0
+                    estado_val = "Pendiente"
+
+                nueva_fila = {
+                    'ID': nuevo_id,
+                    'Fecha': fecha_final,
+                    'Motorizado': moto_sel,
+                    'Cliente': cliente_final,
+                    'Origen': origen_final,
+                    'Destino': destino_final,
+                    'Detalle': "-",
+                    'Precio_Cliente': precio_directo,
+                    'Porcentaje_Comision': comision_val,
+                    'Monto_Motorizado': monto_moto,
+                    'Ganancia_Empresa': ganancia_emp,
+                    'Estado_Validacion': estado_val,
+                    'Estado_Cliente': 'Pendiente',
+                    'Estado_Motorizado': 'Pendiente'
+                }
+                
+                df_servicios = pd.concat([df_servicios, pd.DataFrame([nueva_fila])], ignore_index=True)
+                df_servicios.to_csv(FILE_SERVICIOS, index=False)
+                
+                if estado_val == "Validado":
+                    st.success(f"✅ ¡Vuelta #{nuevo_id} guardada y VALIDADA por ${precio_directo:.2f}!")
+                else:
+                    st.info(f"ℹ️ Vuelta #{nuevo_id} precargada con éxito (Pendiente por validación de precio).")
+                st.toast(f"✅ Vuelta #{nuevo_id} precargada", icon="🛵")
+            else:
+                st.error("⚠️ Debes ingresar al menos el destino de la carrera.") 
+                
 # ---------------------------------------------------------
 # TAB 2: VALIDAR PRECIOS Y EDITAR VUELTAS CON VISUALIZACIÓN
 # ---------------------------------------------------------
