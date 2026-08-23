@@ -58,28 +58,32 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 ])
 
 # ---------------------------------------------------------
-# TAB 1: REGISTRAR VUELTA (CON RESET SEGURO Y NOTIFICACIÓN)
+# TAB 1: REGISTRAR VUELTA (CON FORMULARIO Y RESET NATIVO)
 # ---------------------------------------------------------
 with tab1:
     st.subheader("Agregar Vuelta")
     
     fecha_operativa = st.date_input("Fecha de las carreras", key="fecha_carreras_fija", format="DD/MM/YYYY")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        lista_motos = df_motorizados['Nombre'].tolist()
-        moto_sel = st.selectbox("Motorizado", lista_motos, key="moto_sel_key")
-        
-        lista_cli = df_clientes['Nombre'].tolist()
-        cli_sel = st.selectbox("Seleccionar Cliente", lista_cli, key="cli_sel_key")
-        
-    with col2:
-        origen = st.text_input("Desde", placeholder="Local", key="origen_input")
-        destino = st.text_input("Hasta", placeholder="Local", key="destino_input")
+    # Formulario con limpieza automática al presionar enviar
+    with st.form("form_agregar_vuelta", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            lista_motos = df_motorizados['Nombre'].tolist()
+            moto_sel = st.selectbox("Motorizado", lista_motos)
+            
+            lista_cli = df_clientes['Nombre'].tolist()
+            cli_sel = st.selectbox("Seleccionar Cliente", lista_cli)
+            
+        with col2:
+            origen = st.text_input("Desde", placeholder="Local")
+            destino = st.text_input("Hasta", placeholder="Local")
 
-    precio_directo = st.number_input("Precio Cliente ($) (Opcional - Valida de inmediato si > 0)", min_value=0.0, value=0.0, step=0.50, key="precio_input")
+        precio_directo = st.number_input("Precio Cliente ($) (Opcional - Valida de inmediato si > 0)", min_value=0.0, value=0.0, step=0.50)
 
-    if st.button("Guardar Vuelta", type="primary", use_container_width=True):
+        guardar_btn = st.form_submit_button("Guardar Vuelta", type="primary", use_container_width=True)
+
+    if guardar_btn:
         if destino.strip() or origen.strip():
             nuevo_id = len(df_servicios) + 1
             fecha_final = f"{fecha_operativa} {datetime.now().strftime('%H:%M')}"
@@ -118,16 +122,13 @@ with tab1:
             df_servicios = pd.concat([df_servicios, pd.DataFrame([nueva_fila])], ignore_index=True)
             df_servicios.to_csv(FILE_SERVICIOS, index=False)
             
-            # Notificación flotante de confirmación
-            st.toast(f"✅ Vuelta #{nuevo_id} guardada con éxito", icon="🛵")
-
-            # Eliminación segura de las claves para limpiar las entradas en el siguiente ciclo
-            if "origen_input" in st.session_state: del st.session_state["origen_input"]
-            if "destino_input" in st.session_state: del st.session_state["destino_input"]
-            if "precio_input" in st.session_state: del st.session_state["precio_input"]
-            if "cli_sel_key" in st.session_state and lista_cli: del st.session_state["cli_sel_key"]
-
-            st.rerun()
+            # Notificaciones inmediatas en pantalla
+            if estado_val == "Validado":
+                st.success(f"✅ ¡Vuelta #{nuevo_id} guardada y VALIDADA por ${precio_directo:.2f}!")
+            else:
+                st.info(f"ℹ️ Vuelta #{nuevo_id} guardada (Pendiente por validar precio).")
+                
+            st.toast(f"✅ Vuelta #{nuevo_id} registrada con éxito", icon="🛵")
         else:
             st.error("⚠️ Debes ingresar al menos el destino de la carrera.")
             
