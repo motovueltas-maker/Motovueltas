@@ -154,7 +154,7 @@ with tab1:
             st.error("⚠️ Debes ingresar al menos el destino de la carrera.") 
             
 # ---------------------------------------------------------
-# TAB 2: VALIDAR PRECIOS Y EDITAR EDICIÓN COMPLETA DE VUELTAS
+# TAB 2: VALIDAR PRECIOS Y EDITAR VUELTAS CON VISUALIZACIÓN
 # ---------------------------------------------------------
 with tab2:
     st.subheader("Validación y Corrección de Vueltas")
@@ -190,13 +190,13 @@ with tab2:
     else:
         st.info("No hay vueltas pendientes por validar.")
 
-    # 2. EDITAR VUELTAS YA REGISTRADAS (TODOS LOS DETALLES DISPONIBLES)
+    # 2. EDITAR VUELTAS CON VISUALIZACIÓN EN TIEMPO REAL
     if not df_servicios.empty:
         st.write("---")
         st.write("### ✏️ Corregir/Editar Vueltas Ya Registradas")
         
-        # Filtros de búsqueda superiores
-        col_f1, col_f2, col_f3 = st.columns(3)
+        # Filtros de búsqueda (Motorizado, Cliente, Rango de Fechas)
+        col_f1, col_f2, col_f3, col_f4 = st.columns(4)
         with col_f1:
             lista_mots_filtro = ["Todos"] + sorted(df_servicios['Motorizado'].dropna().unique().tolist())
             filtro_moto = st.selectbox("Filtrar por Motorizado", lista_mots_filtro, key="f_moto_tab2")
@@ -204,19 +204,31 @@ with tab2:
             lista_clis_filtro = ["Todos"] + sorted(df_servicios['Cliente'].dropna().unique().tolist())
             filtro_cliente = st.selectbox("Filtrar por Cliente", lista_clis_filtro, key="f_cli_tab2")
         with col_f3:
-            filtro_fecha = st.date_input("Filtrar por Fecha", value=None, key="f_fecha_tab2")
+            filtro_f_ini = st.date_input("Fecha Desde", value=None, key="f_ini_tab2")
+        with col_f4:
+            filtro_f_fin = st.date_input("Fecha Hasta", value=None, key="f_fin_tab2")
 
         # Aplicar filtros
         df_filtrado = df_servicios.copy()
+        df_filtrado['Fecha_dt'] = pd.to_datetime(df_filtrado['Fecha'].astype(str).str[:10], errors='coerce')
+
         if filtro_moto != "Todos":
             df_filtrado = df_filtrado[df_filtrado['Motorizado'] == filtro_moto]
         if filtro_cliente != "Todos":
             df_filtrado = df_filtrado[df_filtrado['Cliente'] == filtro_cliente]
-        if filtro_fecha is not None:
-            fecha_str = filtro_fecha.strftime("%Y-%m-%d")
-            df_filtrado = df_filtrado[df_filtrado['Fecha'].astype(str).str.startswith(fecha_str)]
+        if filtro_f_ini is not None:
+            df_filtrado = df_filtrado[df_filtrado['Fecha_dt'] >= pd.to_datetime(filtro_f_ini)]
+        if filtro_f_fin is not None:
+            df_filtrado = df_filtrado[df_filtrado['Fecha_dt'] <= pd.to_datetime(filtro_f_fin)]
 
         if not df_filtrado.empty:
+            # 📊 MOSTRAR TABLA EN TIEMPO REAL
+            st.write(f"##### 📋 Vueltas encontradas ({len(df_filtrado)})")
+            df_display = df_filtrado[['ID', 'Fecha', 'Motorizado', 'Cliente', 'Origen', 'Destino', 'Precio_Cliente', 'Porcentaje_Comision']].copy()
+            df_display.columns = ['ID', 'Fecha', 'Motorizado', 'Cliente', 'Origen', 'Destino', 'Precio ($)', '% Com.']
+            st.dataframe(df_display, use_container_width=True)
+
+            # Selección de la vuelta a corregir
             df_filtrado['Label_Edit'] = "Vuelta #" + df_filtrado['ID'].astype(str) + " - " + df_filtrado['Motorizado'] + " (" + df_filtrado['Cliente'] + ") - $" + df_filtrado['Precio_Cliente'].astype(str) + " [" + df_filtrado['Fecha'].astype(str) + "]"
             lista_opciones = df_filtrado['Label_Edit'].tolist()
             
@@ -226,7 +238,7 @@ with tab2:
             
             st.markdown(f"**Editando detalles de la Vuelta #{row_edit['ID']}**")
 
-            # Fila 1: Fecha, Motorizado y Cliente
+            # Formulario de edición
             c_e1, c_e2, c_e3 = st.columns(3)
             with c_e1:
                 try:
@@ -245,7 +257,6 @@ with tab2:
                 idx_c = lista_cli_edit.index(row_edit['Cliente']) if row_edit['Cliente'] in lista_cli_edit else 0
                 edit_cliente = st.selectbox("Cambiar Cliente", lista_cli_edit, index=idx_c, key=f"edit_cli_{row_edit['ID']}")
 
-            # Fila 2: Desde, Hasta, Precio y % Comisión
             c_e4, c_e5, c_e6, c_e7 = st.columns(4)
             with c_e4:
                 edit_origen = st.text_input("Desde", value=str(row_edit.get('Origen', 'Local')), key=f"edit_orig_{row_edit['ID']}")
@@ -256,14 +267,12 @@ with tab2:
             with c_e7:
                 edit_comision = st.number_input("% Comisión", min_value=0.0, max_value=100.0, value=float(row_edit['Porcentaje_Comision']), step=0.5, key=f"edit_c_{row_edit['ID']}")
 
-            # Cálculos de re-balanceo
             nuevo_monto_moto = round(edit_precio * (edit_comision / 100.0), 2)
             nueva_ganancia = round(edit_precio - nuevo_monto_moto, 2)
             
             st.caption(f"💡 Nuevo Pago Chofer: **${nuevo_monto_moto:.2f}** | Nueva Ganancia Empresa: **${nueva_ganancia:.2f}**")
 
             if st.button("Guardar Cambios de esta Vuelta", type="primary", key=f"btn_save_{row_edit['ID']}"):
-                # Mantener la hora original si existe, modificando solo el día
                 hora_str = str(row_edit['Fecha'])[11:] if len(str(row_edit['Fecha'])) > 10 else datetime.now().strftime('%H:%M')
                 fecha_actualizada = f"{edit_fecha} {hora_str}".strip()
 
@@ -279,6 +288,8 @@ with tab2:
                 
                 if 'Label_Edit' in df_servicios.columns:
                     df_servicios = df_servicios.drop(columns=['Label_Edit'])
+                if 'Fecha_dt' in df_servicios.columns:
+                    df_servicios = df_servicios.drop(columns=['Fecha_dt'])
                     
                 df_servicios.to_csv(FILE_SERVICIOS, index=False)
                 st.toast(f"✅ Vuelta #{row_edit['ID']} corregida completamente", icon="✏️")
