@@ -181,24 +181,21 @@ with tab2:
 with tab3:
     st.subheader("Corte de Cuenta Clientes")
     validados_cli = df_servicios[(df_servicios['Estado_Validacion'] == 'Validado') & (df_servicios['Estado_Cliente'] == 'Pendiente')]
-    
     if not validados_cli.empty:
         cli_corte = st.selectbox("Cliente", validados_cli['Cliente'].unique())
         df_c = validados_cli[validados_cli['Cliente'] == cli_corte]
-        
         total_deuda = df_c['Precio_Cliente'].sum()
         st.metric("Total Deuda", f"${total_deuda:.2f}")
         st.dataframe(df_c[['ID', 'Fecha', 'Origen', 'Destino', 'Detalle', 'Precio_Cliente']], use_container_width=True)
         
         msj = f"*MOTOVUELTAS - Resumen de Cuenta*\nCliente: *{cli_corte}*\n---\n"
         for _, r in df_c.iterrows():
-    # Extraer DD/MM si la fecha está guardada como 'AAAA-MM-DD' o 'DD/MM/AAAA'
-    try:
-        fecha_corta = pd.to_datetime(str(r['Fecha']).split()[0]).strftime('%d/%m')
-    except:
-        fecha_corta = str(r['Fecha'])[:5]
-        
-    msj += f"• [{fecha_corta}] {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
+            try:
+                fecha_corta = pd.to_datetime(str(r['Fecha']).split()[0]).strftime('%d/%m')
+            except:
+                fecha_corta = str(r['Fecha'])[:5]
+            msj += f"• [{fecha_corta}] {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
+            
         msj += f"---\n*TOTAL A PAGAR: ${total_deuda:.2f}*"
         
         st.text_area("Mensaje de WhatsApp:", msj, height=150)
