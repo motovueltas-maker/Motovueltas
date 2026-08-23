@@ -280,28 +280,98 @@ with tab3:
         st.info("Sin cuentas pendientes por cobrar a clientes.")
 
 # ---------------------------------------------------------
-# TAB 4: LIQUIDACIÓN MOTORIZADOS
+# TAB 4: LIQUIDACIÓN MOTORIZADOS CON GESTIÓN DE AVANCES
 # ---------------------------------------------------------
 with tab4:
     st.subheader("Liquidación a Choferes")
+    
+    FILE_AVANCES = "avances.csv"
+    
+    # Cargar o crear el DataFrame de avances en memoria
+    if os.path.exists(FILE_AVANCES):
+        df_avances = pd.read_csv(FILE_AVANCES)
+    else:
+        df_avances = pd.DataFrame(columns=['ID', 'Fecha', 'Motorizado', 'Monto', 'Concepto', 'Estado'])
+        df_avances.to_csv(FILE_AVANCES, index=False)
+
     validados_mot = df_servicios[(df_servicios['Estado_Validacion'] == 'Validado') & (df_servicios['Estado_Motorizado'] == 'Pendiente')]
     
     if not validados_mot.empty:
-        mot_corte = st.selectbox("Motorizado", validados_mot['Motorizado'].unique())
+        lista_motorizados_pendientes = validados_mot['Motorizado'].unique().tolist()
+        mot_corte = st.selectbox("Seleccionar Motorizado", lista_motorizados_pendientes, key="mot_sel_liq")
+        
+        # 1. FORMULARIO PARA REGISTRAR AVANCE/ADELANTO
+        with st.expander(f"➕ Registrar Avance / Adelanto a {mot_corte}", expanded=False):
+            with st.form("form_nuevo_avance", clear_on_submit=True):
+                col_a1, col_a2, col_a3 = st.columns(3)
+                with col_a1:
+                    f_avance = st.date_input("Fecha del Avance", key="f_av_input", format="DD/MM/YYYY")
+                with col_a2:
+                    monto_av = st.number_input("Monto Avance ($)", min_value=0.0, step=0.50, key="m_av_input")
+                with col_a3:
+                    concepto_av = st.text_input("Concepto (ej. Gasolina)", placeholder="Detalle corto", key="c_av_input")
+                
+                guardar_av_btn = st.form_submit_button("Guardar Avance", type="primary", use_container_width=True)
+            
+            if guardar_av_btn:
+                if monto_av > 0:
+                    nuevo_id_av = len(df_avances) + 1
+                    nuevo_reg_av = {
+                        'ID': nuevo_id_av,
+                        'Fecha': f_avance.strftime("%d/%m/%Y"),
+                        'Motorizado': mot_corte,
+                        'Monto': float(monto_av),
+                        'Concepto': concepto_av.strip() if concepto_av.strip() else "Adelanto",
+                        'Estado': 'Pendiente'
+                    }
+                    df_avances = pd.concat([df_avances, pd.DataFrame([nuevo_reg_av])], ignore_index=True)
+                    df_avances.to_csv(FILE_AVANCES, index=False)
+                    st.toast(f"✅ Avance de ${monto_av:.2f} registrado a {mot_corte}", icon="💵")
+                    st.rerun()
+                else:
+                    st.error("⚠️ El monto del avance debe ser mayor a $0.")
+
+        # 2. CÁLCULOS Y MÉTRICAS
         df_m = validados_mot[validados_mot['Motorizado'] == mot_corte]
+        total_vueltas = df_m['Monto_Motorizado'].sum()
         
-        total_pago = df_m['Monto_Motorizado'].sum()
-        st.metric("Total a Pagar", f"${total_pago:.2f}")
+        # Filtrar avances pendientes del motorizado
+        df_av_mot = df_avances[(df_avances['Motorizado'] == mot_corte) & (df_avances['Estado'] == 'Pendiente')] if not df_avances.empty else pd.DataFrame()
+        total_avances = df_av_mot['Monto'].sum() if not df_av_mot.empty else 0.0
+        
+        total_neto = total_vueltas - total_avances
+
+        # Mostrar métricas agrupadas
+        m_col1, m_col2, m_col3 = st.columns(3)
+        m_col1.metric("Acumulado Vueltas", f"${total_vueltas:.2f}")
+        m_col2.metric("Total Avances", f"-${total_avances:.2f}")
+        m_col3.metric("Neto a Pagar", f"${total_neto:.2f}")
+
+        # 3. TABLA DE AVANCES ENTREGADOS
+        if not df_av_mot.empty:
+            st.write("##### 💵 Avances Registrados en este Período")
+            st.dataframe(df_av_mot[['Fecha', 'Monto', 'Concepto']], use_container_width=True)
+
+        # 4. TABLA DE VUELTAS PENDIENTES
+        st.write("##### 🛵 Vueltas del Período")
         st.dataframe(df_m[['ID', 'Fecha', 'Cliente', 'Origen', 'Destino', 'Monto_Motorizado']], use_container_width=True)
-        
-        if st.button(f"Liquidar a {mot_corte}", type="primary"):
+
+        # 5. BOTÓN DE LIQUIDACIÓN
+        if st.button(f"Liquidar a {mot_corte} (${total_neto:.2f})", type="primary", use_container_width=True):
+            # Marcar vueltas como Pagadas
             df_servicios.loc[(df_servicios['Motorizado'] == mot_corte) & (df_servicios['Estado_Motorizado'] == 'Pendiente'), 'Estado_Motorizado'] = 'Pagado'
             df_servicios.to_csv(FILE_SERVICIOS, index=False)
-            st.success("Pago registrado.")
+            
+            # Marcar avances como Pagados
+            if not df_avances.empty:
+                df_avances.loc[(df_avances['Motorizado'] == mot_corte) & (df_avances['Estado'] == 'Pendiente'), 'Estado'] = 'Pagado'
+                df_avances.to_csv(FILE_AVANCES, index=False)
+                
+            st.success(f"✅ Liquidación completada para {mot_corte}.")
             st.rerun()
     else:
         st.info("Sin liquidaciones pendientes a choferes.")
-
+        
 # ---------------------------------------------------------
 # TAB 5: DIRECTORIO DE CLIENTES (FORMULARIO CON RESET NATIVO)
 # ---------------------------------------------------------
