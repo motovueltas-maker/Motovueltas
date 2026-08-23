@@ -236,22 +236,25 @@ with tab4:
         st.info("Sin liquidaciones pendientes a choferes.")
 
 # ---------------------------------------------------------
-# TAB 5: DIRECTORIO DE CLIENTES (REORGANIZADO)
+# TAB 5: DIRECTORIO DE CLIENTES (FORMULARIO CON RESET NATIVO)
 # ---------------------------------------------------------
 with tab5:
     st.subheader("Directorio de Clientes")
 
-    # 1. AGREGAR NUEVO CLIENTE (PRIMERO)
+    # 1. AGREGAR NUEVO CLIENTE (FORMULARIO DE RESET AUTOMÁTICO)
     st.write("### ➕ Agregar Nuevo Cliente")
-    col_c1, col_c2, col_c3 = st.columns(3)
-    with col_c1:
-        nuevo_cli_nombre = st.text_input("Nombre / Negocio", key="nuevo_cli_nom_key")
-    with col_c2:
-        nuevo_cli_tel = st.text_input("Teléfono / WhatsApp (ID Único)", key="nuevo_cli_tel_key")
-    with col_c3:
-        nuevo_cli_ubicacion = st.text_input("Ubicación / Dirección (Nuevo)", key="nuevo_cli_ubi_key")
+    with st.form("form_agregar_cliente", clear_on_submit=True):
+        col_c1, col_c2, col_c3 = st.columns(3)
+        with col_c1:
+            nuevo_cli_nombre = st.text_input("Nombre / Negocio")
+        with col_c2:
+            nuevo_cli_tel = st.text_input("Teléfono / WhatsApp (ID Único)")
+        with col_c3:
+            nuevo_cli_ubicacion = st.text_input("Ubicación / Dirección (Nuevo)")
 
-    if st.button("Guardar Nuevo Cliente", type="primary", use_container_width=True):
+        guardar_cli_btn = st.form_submit_button("Guardar Nuevo Cliente", type="primary", use_container_width=True)
+
+    if guardar_cli_btn:
         tel_limpio = nuevo_cli_tel.strip()
         nom_limpio = nuevo_cli_nombre.strip()
 
@@ -271,14 +274,8 @@ with tab5:
                 df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
                 df_clientes.to_csv(FILE_CLIENTES, index=False)
 
-                # Notificación flotante de confirmación
+                st.success(f"✅ Cliente '{nom_limpio}' registrado con éxito.")
                 st.toast(f"✅ Cliente '{nom_limpio}' registrado con éxito", icon="👤")
-                
-                # Eliminación segura de las claves para que los campos vuelvan limpios
-                del st.session_state["nuevo_cli_nom_key"]
-                del st.session_state["nuevo_cli_tel_key"]
-                del st.session_state["nuevo_cli_ubi_key"]
-
                 st.rerun()
 
     # 2. EDITAR / ACTUALIZAR CLIENTE EXISTENTE (SEGUNDO)
