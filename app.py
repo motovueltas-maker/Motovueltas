@@ -156,74 +156,129 @@ with tab1:
 # TAB 2: VALIDAR PRECIOS Y EDITAR COMISIONES REGISTRADAS
 # ---------------------------------------------------------
 with tab2:
-    st.subheader("Validación de Vueltas por el Administrador")
+    st.header("Validación y Corrección de Vueltas")
     
-    # 1. VUELTAS PENDIENTES POR VALIDAR
-    vueltas_pendientes = df_servicios[df_servicios['Estado_Validacion'] == 'Pendiente']
-    if not vueltas_pendientes.empty:
-        for idx, row in vueltas_pendientes.iterrows():
-            with st.expander(f"Vuelta #{row['ID']} - {row['Motorizado']} -> {row['Cliente']} ({row['Origen']} a {row['Destino']})", expanded=True):
-                st.write(f"**Fecha:** {row['Fecha']} | **Detalle:** {row['Detalle']}")
-                com_base = df_motorizados.loc[df_motorizados['Nombre'] == row['Motorizado'], 'Comision_Base'].values
-                com_val = float(com_base[0]) if len(com_base) > 0 else 66.67
+    # -------------------------------------------------------------
+    # SECCIÓN 1: VALIDACIÓN DE VUELTAS PENDIENTES
+    # -------------------------------------------------------------
+    st.subheader("📋 Validación de Vueltas por el Administrador")
+    
+    # Filtrar vueltas sin validar
+    pendientes = st.session_state.df_vueltas[~st.session_state.df_vueltas["validada"]]
+    
+    if pendientes.empty:
+        st.info("No hay vueltas pendientes por validar.")
+    else:
+        for idx, row in pendientes.iterrows():
+            with st.expander(f"Vuelta #{row['id']} - {row['motorizado']} ({row['cliente']}) - ${row['precio']}"):
+                st.write(f"**Fecha:** {row['fecha']}")
+                st.write(f"**Detalle:** {row['detalle']}")
                 
                 col_v1, col_v2 = st.columns(2)
-                with col_v1:
-                    precio = st.number_input(f"Precio Cliente ($) [ID #{row['ID']}]", min_value=0.0, value=0.0, step=0.50, key=f"p_{row['ID']}")
-                with col_v2:
-                    comision = st.number_input(f"% Comisión [ID #{row['ID']}]", min_value=0.0, max_value=100.0, value=com_val, step=0.5, key=f"c_{row['ID']}")
+                nuevo_precio = col_v1.number_input(
+                    "Confirmar/Corregir Precio ($)", 
+                    value=float(row['precio']), 
+                    key=f"val_p_{row['id']}"
+                )
+                nueva_comision = col_v2.number_input(
+                    "Confirmar/Corregir % Comisión", 
+                    value=float(row['comision_pct']), 
+                    key=f"val_c_{row['id']}"
+                )
                 
-                monto_moto = round(precio * (comision / 100.0), 2)
-                ganancia_emp = round(precio - monto_moto, 2)
-                st.write(f"Pago Chofer: **${monto_moto:.2f}** | Ganancia MotoVueltas: **${ganancia_emp:.2f}**")
+                # Cálculos en tiempo real
+                pago_chofer = nuevo_precio * (nueva_comision / 100.0)
+                ganancia_empresa = nuevo_precio - pago_chofer
                 
-                if st.button(f"Validar Vuelta #{row['ID']}", type="primary", key=f"btn_{row['ID']}"):
-                    if precio > 0:
-                        df_servicios.loc[df_servicios['ID'] == row['ID'], ['Precio_Cliente', 'Porcentaje_Comision', 'Monto_Motorizado', 'Ganancia_Empresa', 'Estado_Validacion']] = [precio, comision, monto_moto, ganancia_emp, 'Validado']
-                        df_servicios.to_csv(FILE_SERVICIOS, index=False)
-                        st.success(f"Vuelta #{row['ID']} validada correctamente.")
-                        st.rerun()
-                    else:
-                        st.error("Ingresa un precio mayor a $0 para validar.")
+                st.caption(f"**Pago Chofer:** ${pago_chofer:.2f} | **Ganancia Empresa:** ${ganancia_empresa:.2f}")
+                
+                if st.button("Validar y Aprobar", key=f"btn_val_{row['id']}"):
+                    st.session_state.df_vueltas.loc[st.session_state.df_vueltas["id"] == row["id"], "precio"] = nuevo_precio
+                    st.session_state.df_vueltas.loc[st.session_state.df_vueltas["id"] == row["id"], "comision_pct"] = nueva_comision
+                    st.session_state.df_vueltas.loc[st.session_state.df_vueltas["id"] == row["id"], "validada"] = True
+                    guardar_datos(st.session_state.df_vueltas)
+                    st.success(f"Vuelta #{row['id']} validada correctamente.")
+                    st.rerun()
+
+    st.markdown("---")
+
+    # -------------------------------------------------------------
+    # SECCIÓN 2: CORREGIR/EDITAR VUELTAS CON FILTROS
+    # -------------------------------------------------------------
+    st.subheader("✏️ Corregir/Editar Comisión de Vueltas Ya Registradas")
+
+    if st.session_state.df_vueltas.empty:
+        st.info("No hay vueltas registradas en el sistema.")
     else:
-        st.info("No hay vueltas pendientes por validar.")
-
-    # 2. SECCIÓN PARA EDITAR VUELTAS YA REGISTRADAS (PARA CORREGIR JHOINER)
-    if not df_servicios.empty:
-        st.write("---")
-        st.write("### ✏️ Corregir/Editar Comisión de Vueltas Ya Registradas")
+        # Filtros de búsqueda para acotar la lista
+        f_col1, f_col2 = st.columns(2)
         
-        # Etiqueta descriptiva para buscar la vuelta
-        df_servicios['Label_Edit'] = "Vuelta #" + df_servicios['ID'].astype(str) + " - " + df_servicios['Motorizado'] + " (" + df_servicios['Cliente'] + ") - $" + df_servicios['Precio_Cliente'].astype(str)
-        lista_opciones = df_servicios['Label_Edit'].tolist()
-        
-        vuelta_sel_label = st.selectbox("Selecciona la Vuelta a Modificar", lista_opciones)
-        idx_edit = df_servicios[df_servicios['Label_Edit'] == vuelta_sel_label].index[0]
-        row_edit = df_servicios.loc[idx_edit]
-        
-        col_ed1, col_ed2, col_ed3 = st.columns(3)
-        with col_ed1:
-            edit_precio = st.number_input("Precio Cliente ($)", min_value=0.0, value=float(row_edit['Precio_Cliente']), step=0.50, key="edit_p")
-        with col_ed2:
-            edit_comision = st.number_input("% Comisión Motorizado", min_value=0.0, max_value=100.0, value=float(row_edit['Porcentaje_Comision']), step=0.5, key="edit_c")
-        with col_ed3:
-            nuevo_monto_moto = round(edit_precio * (edit_comision / 100.0), 2)
-            nueva_ganancia = round(edit_precio - nuevo_monto_moto, 2)
-            st.write(f"Pago Chofer: **${nuevo_monto_moto:.2f}**")
-            st.write(f"Ganancia Empresa: **${nueva_ganancia:.2f}**")
-
-        if st.button("Guardar Cambios de esta Vuelta", type="primary"):
-            df_servicios.at[idx_edit, 'Precio_Cliente'] = edit_precio
-            df_servicios.at[idx_edit, 'Porcentaje_Comision'] = edit_comision
-            df_servicios.at[idx_edit, 'Monto_Motorizado'] = nuevo_monto_moto
-            df_servicios.at[idx_edit, 'Ganancia_Empresa'] = nueva_ganancia
+        with f_col1:
+            lista_mot = ["Todos"] + sorted(st.session_state.df_vueltas["motorizado"].dropna().unique().tolist())
+            filtro_motorizado = st.selectbox("Filtrar por Motorizado", lista_mot, key="filtro_mot_edit")
             
-            if 'Label_Edit' in df_servicios.columns:
-                df_servicios = df_servicios.drop(columns=['Label_Edit'])
+        with f_col2:
+            filtro_fecha = st.date_input("Filtrar por Fecha", value=None, key="filtro_fec_edit")
+
+        # Aplicar filtros
+        df_edit = st.session_state.df_vueltas.copy()
+        
+        if filtro_motorizado != "Todos":
+            df_edit = df_edit[df_edit["motorizado"] == filtro_motorizado]
+            
+        if filtro_fecha:
+            # Asegura la conversión a string YYYY-MM-DD para comparar con el dataframe
+            fecha_str = filtro_fecha.strftime("%Y-%m-%d")
+            df_edit = df_edit[df_edit["fecha"].astype(str) == fecha_str]
+
+        # Desplegable filtrado
+        if df_edit.empty:
+            st.warning("No se encontraron vueltas con los filtros seleccionados.")
+        else:
+            opciones_dict = {
+                f"Vuelta #{r['id']} - {r['motorizado']} ({r['cliente']}) - ${r['precio']} [{r['fecha']}]": r['id']
+                for _, r in df_edit.iterrows()
+            }
+            
+            vuelta_label = st.selectbox("Selecciona la Vuelta a Modificar", list(opciones_dict.keys()))
+            id_seleccionado = opciones_dict[vuelta_label]
+            
+            # Obtener datos actuales de la vuelta elegida
+            fila_actual = st.session_state.df_vueltas[st.session_state.df_vueltas["id"] == id_seleccionado].iloc[0]
+
+            col_e1, col_e2, col_e3 = st.columns(3)
+
+            with col_e1:
+                edit_precio = st.number_input(
+                    "Precio Cliente ($)", 
+                    value=float(fila_actual["precio"]), 
+                    step=0.5, 
+                    key=f"edit_p_{id_seleccionado}"
+                )
+
+            with col_e2:
+                edit_comision = st.number_input(
+                    "% Comisión Motorizado", 
+                    value=float(fila_actual["comision_pct"]), 
+                    step=1.0, 
+                    key=f"edit_c_{id_seleccionado}"
+                )
+
+            # Cálculos de previsualización
+            edit_pago_chofer = edit_precio * (edit_comision / 100.0)
+            edit_ganancia_empresa = edit_precio - edit_pago_chofer
+
+            with col_e3:
+                st.write(f"**Pago Chofer:** ${edit_pago_chofer:.2f}")
+                st.write(f"**Ganancia Empresa:** ${edit_ganancia_empresa:.2f}")
+
+            if st.button("Guardar Cambios de esta Vuelta", type="primary", key=f"btn_save_{id_seleccionado}"):
+                st.session_state.df_vueltas.loc[st.session_state.df_vueltas["id"] == id_seleccionado, "precio"] = edit_precio
+                st.session_state.df_vueltas.loc[st.session_state.df_vueltas["id"] == id_seleccionado, "comision_pct"] = edit_comision
                 
-            df_servicios.to_csv(FILE_SERVICIOS, index=False)
-            st.toast("✅ Vuelta actualizada correctamente", icon="✏️")
-            st.rerun()
+                guardar_datos(st.session_state.df_vueltas)
+                st.success(f"¡Vuelta #{id_seleccionado} actualizada con éxito!")
+                st.rerun()
 
 # ---------------------------------------------------------
 # TAB 3: CORTE CLIENTES Y WHATSAPP
