@@ -192,7 +192,7 @@ with tab3:
         
         msj = f"*MOTOVUELTAS - Resumen de Cuenta*\nCliente: *{cli_corte}*\n---\n"
         for _, r in df_c.iterrows():
-            msj += f"• Vuelta #{r['ID']} ({r['Origen']} -> {r['Destino']}): ${r['Precio_Cliente']:.2f}\n"
+            msj += f"• {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
         msj += f"---\n*TOTAL A PAGAR: ${total_deuda:.2f}*"
         
         st.text_area("Mensaje de WhatsApp:", msj, height=150)
