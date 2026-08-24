@@ -613,12 +613,12 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
                 st.rerun()
                 
 # ---------------------------------------------------------
-# TAB 5: DIRECTORIO DE CLIENTES (FORMULARIO CON RESET NATIVO)
+# TAB 5: DIRECTORIO DE CLIENTES
 # ---------------------------------------------------------
 elif opcion_menu == "👥 Directorio Clientes":
     st.subheader("Directorio de Clientes")
 
-    # 1. AGREGAR NUEVO CLIENTE (FORMULARIO DE RESET AUTOMÁTICO)
+    # 1. AGREGAR NUEVO CLIENTE
     st.write("### ➕ Agregar Nuevo Cliente")
     with st.form("form_agregar_cliente", clear_on_submit=True):
         col_c1, col_c2, col_c3 = st.columns(3)
@@ -638,10 +638,9 @@ elif opcion_menu == "👥 Directorio Clientes":
         if not nom_limpio or not tel_limpio:
             st.error("⚠️ Tanto el Nombre como el Teléfono son obligatorios.")
         else:
-            # Validación anti-duplicados por número telefónico
             telefonos_existentes = df_clientes['Telefono'].astype(str).str.strip().tolist() if not df_clientes.empty else []
             if tel_limpio in telefonos_existentes:
-                st.error(f"❌ Ya existe un cliente registrado con el teléfono {tel_limpio}. No se permiten duplicados.")
+                st.error(f"❌ Ya existe un cliente registrado con el teléfono {tel_limpio}.")
             else:
                 nuevo_registro_cli = {
                     "Nombre": nom_limpio,
@@ -649,7 +648,7 @@ elif opcion_menu == "👥 Directorio Clientes":
                     "Ubicacion": nuevo_cli_ubicacion.strip() if nuevo_cli_ubicacion.strip() else "-"
                 }
                 df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
-                conn.write(worksheet="Clientes", data=df_clientes)
+                conn.update(worksheet="Clientes", data=df_clientes)
                 st.success(f"✅ Cliente '{nom_limpio}' registrado con éxito.")
                 st.rerun()
 
@@ -658,13 +657,14 @@ elif opcion_menu == "👥 Directorio Clientes":
         st.write("---")
         st.write("### ✏️ Editar / Actualizar Cliente Existente")
         
-        # Crear lista combinada Nombre + Teléfono para el selectbox
-        df_clientes['Select_Label'] = df_clientes['Nombre'] + " (" + df_clientes['Telefono'].astype(str) + ")"
-        opciones_cli = df_clientes['Select_Label'].tolist()
+        # Copia local para armar las opciones
+        df_temp = df_clientes.copy()
+        df_temp['Select_Label'] = df_temp['Nombre'] + " (" + df_temp['Telefono'].astype(str) + ")"
+        opciones_cli = df_temp['Select_Label'].tolist()
         
         cli_sel_label = st.selectbox("Seleccionar Cliente a Modificar", opciones_cli)
 
-        idx_cli = df_clientes[df_clientes['Select_Label'] == cli_sel_label].index[0]
+        idx_cli = df_temp[df_temp['Select_Label'] == cli_sel_label].index[0]
         row_cli_edit = df_clientes.loc[idx_cli]
 
         with st.form("form_editar_cliente"):
@@ -683,17 +683,16 @@ elif opcion_menu == "👥 Directorio Clientes":
             df_clientes.at[idx_cli, 'Telefono'] = edit_tlf_cli.strip()
             df_clientes.at[idx_cli, 'Ubicacion'] = edit_ubi_cli.strip()
 
-            # Eliminar la columna auxiliar antes de guardar en Google Sheets
-            if 'Select_Label' in df_clientes.columns:
-                df_clientes = df_clientes.drop(columns=['Select_Label'])
+            # Asegurar solo las columnas originales
+            df_clientes_save = df_clientes[['Nombre', 'Telefono', 'Ubicacion']].copy()
 
-            conn.write(worksheet="Clientes", data=df_clientes)
+            conn.update(worksheet="Clientes", data=df_clientes_save)
             st.toast("✅ Cliente actualizado con éxito", icon="👤")
             st.rerun()
 
     # 3. MOSTRAR TABLA DE CLIENTES
     st.write("---")
-    st.dataframe(df_clientes, use_container_width=True)
+    st.dataframe(df_clientes[['Nombre', 'Telefono', 'Ubicacion']], use_container_width=True) 
     
 # ---------------------------------------------------------
 # TAB 6: PERFILES DE MOTORIZADOS
