@@ -2,9 +2,13 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-import urllib.parse  # <--- Agrega esta línea aquí
+import urllib.parse
+import extra_streamlit_components as stx  # <--- NUEVA LÍNEA
 
 st.set_page_config(page_title="MotoVueltas - Control Operativo", layout="wide", page_icon="🛵")
+
+# Inicializar gestor de cookies para mantener sesión
+cookie_manager = stx.get_cookie_manager()
 
 # ---------------------------------------------------------
 # OCULTAR BARRA SUPERIOR, MENÚ DE STREAMLIT Y BOTÓN GITHUB
@@ -78,38 +82,51 @@ df_clientes, df_motorizados, df_servicios, df_usuarios = cargar_datos()
 st.title("🛵 MotoVueltas - Sistema de Gestión")
 
 # ---------------------------------------------------------
-# CONTROL DE SESIÓN Y LOGIN DE USUARIOS
+# CONTROL DE SESIÓN Y LOGIN DE USUARIOS (PERSISTENTE)
 # ---------------------------------------------------------
 if "usuario_logueado" not in st.session_state:
     st.session_state["usuario_logueado"] = None
     st.session_state["rol_usuario"] = None
     st.session_state["nombre_usuario"] = None
 
-# Pantalla de Inicio de Sesión si no hay usuario activo
+# Recuperar usuario desde la cookie si existe
+cookie_user = cookie_manager.get(cookie="motovueltas_user")
+if cookie_user and st.session_state["usuario_logueado"] is None:
+    match_cookie = df_usuarios[df_usuarios['Usuario'] == cookie_user]
+    if not match_cookie.empty:
+        st.session_state["usuario_logueado"] = cookie_user
+        st.session_state["rol_usuario"] = match_cookie.iloc[0]['Rol']
+        st.session_state["nombre_usuario"] = match_cookie.iloc[0]['Nombre']
+
+# Pantalla de Inicio de Sesión
 if st.session_state["usuario_logueado"] is None:
     st.subheader("🔐 Iniciar Sesión")
     with st.form("form_login"):
         user_input = st.text_input("Usuario (ej: esneyder, omar)").strip().lower()
         pass_input = st.text_input("Contraseña", type="password")
         btn_login = st.form_submit_button("Ingresar", type="primary", use_container_width=True)
-        
+
         if btn_login:
             match = df_usuarios[(df_usuarios['Usuario'] == user_input) & (df_usuarios['Clave'].astype(str) == pass_input)]
             if not match.empty:
                 st.session_state["usuario_logueado"] = user_input
                 st.session_state["rol_usuario"] = match.iloc[0]['Rol']
                 st.session_state["nombre_usuario"] = match.iloc[0]['Nombre']
+                
+                # Guardar la cookie en el dispositivo por 30 días
+                cookie_manager.set("motovueltas_user", user_input, key="set_cookie_user", max_age=30*24*3600)
+                
                 st.toast(f"Bienvenido {match.iloc[0]['Nombre']}", icon="👋")
                 st.rerun()
             else:
                 st.error("⚠️ Usuario o contraseña incorrectos.")
-    st.stop() # Detiene la ejecución para no mostrar nada si no hay sesión
-
+    st.stop()
+    
 # ---------------------------------------------------------
 # BARRA LATERAL CON INFORMACIÓN DEL USUARIO Y ROLES
 # ---------------------------------------------------------
-st.sidebar.markdown(f"👤 **{st.session_state['nombre_usuario']}**  \n*Rol: {st.session_state['rol_usuario']}*")
 if st.sidebar.button("Cerrar Sesión", type="secondary"):
+    cookie_manager.delete("motovueltas_user", key="delete_cookie_user")
     st.session_state["usuario_logueado"] = None
     st.session_state["rol_usuario"] = None
     st.session_state["nombre_usuario"] = None
