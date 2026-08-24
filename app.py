@@ -117,6 +117,10 @@ if st.sidebar.button("Cerrar Sesión", type="secondary"):
 
 st.sidebar.write("---")
 
+# Función Callback para cambiar de ventana sin error
+def ir_a_liquidacion():
+    st.session_state["opcion_menu"] = "🏍️ Liquidación Motorizados"
+
 # Definir opciones del menú según el Rol del usuario
 if st.session_state["rol_usuario"] == "Chofer":
     opciones_disponibles = ["🛵 Registrar Vuelta", "🏍️ Liquidación Motorizados"]
@@ -140,9 +144,12 @@ opcion_menu = st.sidebar.radio("📌 Menú de Navegación", opciones_disponibles
 if opcion_menu == "🛵 Registrar Vuelta":
     # Botón de acceso directo a balance para choferes en teléfonos
     if st.session_state.get("rol_usuario") == "Chofer":
-        if st.button("📊 Ver mi Balance y Avances", type="secondary", use_container_width=True):
-            st.session_state.opcion_menu = "🏍️ Liquidación Motorizados"
-            st.rerun()
+        st.button(
+            "📊 Ver mi Balance y Avances",
+            type="secondary",
+            use_container_width=True,
+            on_click=ir_a_liquidacion
+        )
 
     es_admin = (st.session_state.get("rol_usuario") == "Admin")
     nombre_sesion = st.session_state.get("nombre_usuario", "")
