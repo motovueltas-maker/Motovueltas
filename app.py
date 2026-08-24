@@ -60,7 +60,7 @@ def cargar_datos():
             {"Usuario": "genesis", "Clave": "7852", "Nombre": "Génesis", "Rol": "Chofer"}
         ])
 
-    return df_cli, df_mot, df_ser, df_usr
+    df_clientes, df_motorizados, df_servicios, df_usuarios = cargar_datos()
 
 st.title("🛵 MotoVueltas - Sistema de Gestión")
 
