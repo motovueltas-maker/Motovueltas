@@ -131,7 +131,7 @@ if opcion_menu == "🛵 Registrar Vuelta":
     col_top1, col_top2, col_top3 = st.columns(3)
     
     with col_top1:
-        fecha_operativa = st.date_input("Fecha de las carreras", key="fecha_carreras_fija", format="DD/MM/YYYY")
+        fecha_operativa = st.date_input("Fecha de la vuelta", key="fecha_carreras_fija", format="DD/MM/YYYY")
     
     if es_admin:
         with col_top2:
