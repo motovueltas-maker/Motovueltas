@@ -506,14 +506,13 @@ except Exception:
                     link_wa = f"https://wa.me/{num_tlf_wa}?text={msj_encoded}"
                     
                     st.link_button("📲 Enviar por WhatsApp", link_wa, type="secondary", use_container_width=True)
-                else:
-                    st.warning("⚠️ Sin número registrado en Clientes para envío directo.")
+    else:
+        st.warning("⚠️ Sin número registrado en Clientes para envío directo.")
 
 # ---------------------------------------------------------
 # TAB 4: LIQUIDACIÓN MOTORIZADOS CON GESTIÓN DE AVANCES
 # ---------------------------------------------------------
 elif opcion_menu == "🏍️ Liquidación Motorizados":
-    st.subheader("Liquidación / Balance del Chofer")
     
     es_admin = (st.session_state.get("rol_usuario") == "Admin")
     nombre_sesion = st.session_state.get("nombre_usuario", "")
