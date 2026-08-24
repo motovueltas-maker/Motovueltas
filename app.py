@@ -649,7 +649,7 @@ elif opcion_menu == "👥 Directorio Clientes":
                     "Ubicacion": nuevo_cli_ubicacion.strip() if nuevo_cli_ubicacion.strip() else "-"
                 }
                 df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
-                conn.update(worksheet="Clientes", data=df_clientes)
+                conn.write(worksheet="Clientes", data=df_clientes)
 
                 st.success(f"✅ Cliente '{nom_limpio}' registrado con éxito.")
                 st.toast(f"✅ Cliente '{nom_limpio}' registrado con éxito", icon="👤")
