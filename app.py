@@ -7,6 +7,23 @@ import urllib.parse  # <--- Agrega esta línea aquí
 st.set_page_config(page_title="MotoVueltas - Control Operativo", layout="wide", page_icon="🛵")
 
 # ---------------------------------------------------------
+# OCULTAR BARRA SUPERIOR, HEADER Y MENÚ DE STREAMLIT
+# ---------------------------------------------------------
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden !important;}
+header {visibility: hidden !important;}
+footer {visibility: hidden !important;}
+.stAppHeader {display: none !important;}
+[data-testid="stHeader"] {display: none !important;}
+[data-testid="stToolbar"] {display: none !important;}
+[data-testid="stDecoration"] {display: none !important;}
+button[title="View source"] {display: none !important;}
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+# ---------------------------------------------------------
 # MANEJO DE ARCHIVOS CSV (PERSISTENCIA SEGURA EN GITHUB)
 # ---------------------------------------------------------
 FILE_CLIENTES = "clientes.csv"
