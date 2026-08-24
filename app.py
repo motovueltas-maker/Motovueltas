@@ -168,9 +168,9 @@ if opcion_menu == "🛵 Registrar Vuelta":
         porcentaje_actual = float(com_base_sug[0]) if len(com_base_sug) > 0 else 66.67
         st.info(f"🛵 Registrando vuelta para el chofer: **{moto_sel}**")
 
-    # Formulario para precargar la carrera
+    # Formulario para precargar la vuelta
     with st.form("form_agregar_vuelta", clear_on_submit=True):
-        lista_cli = [""] + df_clientes['Nombre'].tolist()
+        lista_cli = df_clientes['Nombre'].astype(str).tolist() if not df_clientes.empty else []
         cli_sel = st.selectbox("Seleccionar Cliente", lista_cli, index=0)
         
         col1, col2 = st.columns(2)
@@ -192,7 +192,7 @@ if opcion_menu == "🛵 Registrar Vuelta":
                 fecha_final = f"{fecha_operativa} {datetime.now().strftime('%H:%M')}"
                 origen_final = origen.strip() if origen.strip() else "Local"
                 destino_final = destino.strip() if destino.strip() else "Local"
-                cliente_final = cli_sel if cli_sel else "Cliente General"
+                cliente_final = str(cli_sel).strip() if cli_sel else "Cliente General"
 
                 comision_val = round(float(porcentaje_actual), 2)
                 
