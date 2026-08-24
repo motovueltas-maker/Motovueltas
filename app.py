@@ -485,24 +485,24 @@ except Exception:
             st.text_area("Mensaje de WhatsApp preparado:", msj, height=180)
 
             # 5. Obtener teléfono del cliente y generar enlace codificado correctamente
-            row_cli = df_clientes[df_clientes['Nombre'] == cli_corte]
-            num_tlf = ""
-    if not row_cli.empty:
-        col_num = 'Telefono' if 'Telefono' in row_cli.columns else ('Contacto' if 'Contacto' in row_cli.columns else None)
-        if col_num:
-            num_tlf = str(row_cli[col_num].values[0]).replace("+", "").replace(" ", "").replace("-", "").strip()
-            col_btn1, col_btn2 = st.columns(2)
-            with col_btn1:
-                if num_tlf and num_tlf != "nan":
-                    if num_tlf.startswith("0"):
-                        num_tlf_wa = "58" + num_tlf[1:]
+row_cli = df_clientes[df_clientes['Nombre'] == cli_corte]
+        num_tlf = ""
+        if not row_cli.empty:
+            col_num = 'Telefono' if 'Telefono' in row_cli.columns else ('Contacto' if 'Contacto' in row_cli.columns else None)
+            if col_num:
+                num_tlf = str(row_cli[col_num].values[0]).replace("+", "").replace(" ", "").replace("-", "").strip()
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    if num_tlf and num_tlf != "nan":
+                        if num_tlf.startswith("0"):
+                            num_tlf_wa = "58" + num_tlf[1:]
+                        else:
+                            num_tlf_wa = num_tlf
+                        msj_encoded = urllib.parse.quote(msj)
+                        link_wa = f"https://wa.me/{num_tlf_wa}?text={msj_encoded}"
+                        st.link_button("📲 Enviar por WhatsApp", link_wa, type="secondary", use_container_width=True)
                     else:
-                        num_tlf_wa = num_tlf
-                    msj_encoded = urllib.parse.quote(msj)
-                    link_wa = f"https://wa.me/{num_tlf_wa}?text={msj_encoded}"
-                    st.link_button("📲 Enviar por WhatsApp", link_wa, type="secondary", use_container_width=True)
-                else:
-                    st.warning("⚠️ Sin número registrado en Clientes para envío directo.")
+                        st.warning("⚠️ Sin número registrado en Clientes para envío directo.")
 
 # ---------------------------------------------------------
 # TAB 4: LIQUIDACIÓN MOTORIZADOS CON GESTIÓN DE AVANCES
