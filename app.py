@@ -381,10 +381,10 @@ elif opcion_menu == "✅ Validar Precios":
 elif opcion_menu == "💵 Corte Clientes":
     st.subheader("Corte de Cuenta Clientes")
     
-    try:
-df_abonos = conn.read(worksheet="Abonos", ttl=0)
+try:
+    df_abonos = conn.read(worksheet="Abonos", ttl=0)
 except Exception:
-df_abonos = pd.DataFrame(columns=['ID', 'Fecha', 'Cliente', 'Monto', 'Concepto', 'Estado'])
+    df_abonos = pd.DataFrame(columns=['ID', 'Fecha', 'Cliente', 'Monto', 'Concepto', 'Estado'])
 
     validados_cli = df_servicios[(df_servicios['Estado_Validacion'] == 'Validado') & (df_servicios['Estado_Cliente'] == 'Pendiente')]
     
