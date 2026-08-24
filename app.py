@@ -649,8 +649,8 @@ elif opcion_menu == "👥 Directorio Clientes":
                 }
                 df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
                 
-                # Actualización limpia usando únicamente parámetros válidos
-                df_clean = df_clientes[['Nombre', 'Telefono', 'Ubicacion']].astype(str)
+                # Guardar DataFrame estructurado
+                df_clean = pd.DataFrame(df_clientes[['Nombre', 'Telefono', 'Ubicacion']].values, columns=['Nombre', 'Telefono', 'Ubicacion'])
                 conn.update(worksheet="Clientes", data=df_clean)
                 st.success(f"✅ Cliente '{nom_limpio}' registrado con éxito.")
                 st.rerun()
@@ -685,8 +685,8 @@ elif opcion_menu == "👥 Directorio Clientes":
             df_clientes.at[idx_cli, 'Telefono'] = edit_tlf_cli.strip()
             df_clientes.at[idx_cli, 'Ubicacion'] = edit_ubi_cli.strip()
 
-            # Actualización limpia usando únicamente parámetros válidos
-            df_clean = df_clientes[['Nombre', 'Telefono', 'Ubicacion']].astype(str)
+            # Guardar recreando la estructura limpia sin índices ni metadatos extra
+            df_clean = pd.DataFrame(df_clientes[['Nombre', 'Telefono', 'Ubicacion']].values, columns=['Nombre', 'Telefono', 'Ubicacion'])
             conn.update(worksheet="Clientes", data=df_clean)
             st.toast("✅ Cliente actualizado con éxito", icon="👤")
             st.rerun()
