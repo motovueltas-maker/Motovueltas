@@ -63,11 +63,11 @@ def cargar_datos():
         df_usr = pd.read_csv(FILE_USUARIOS)
     else:
         df_usr = pd.DataFrame([
-            {"Usuario": "esneyder", "Clave": "1234", "Nombre": "Esneyder", "Rol": "Admin"},
-            {"Usuario": "omar", "Clave": "1234", "Nombre": "Omar", "Rol": "Chofer"},
-            {"Usuario": "jhoiner", "Clave": "1234", "Nombre": "Jhoiner", "Rol": "Chofer"},
-            {"Usuario": "deiby", "Clave": "1234", "Nombre": "Deiby", "Rol": "Chofer"},
-            {"Usuario": "genesis", "Clave": "1234", "Nombre": "Génesis", "Rol": "Chofer"}
+            {"Usuario": "esneyder", "Clave": "339733", "Nombre": "Esneyder", "Rol": "Admin"},
+            {"Usuario": "omar", "Clave": "5068", "Nombre": "Omar", "Rol": "Chofer"},
+            {"Usuario": "jhoiner", "Clave": "8139", "Nombre": "Jhoiner", "Rol": "Chofer"},
+            {"Usuario": "deiby", "Clave": "8455", "Nombre": "Deiby", "Rol": "Chofer"},
+            {"Usuario": "genesis", "Clave": "7852", "Nombre": "Génesis", "Rol": "Chofer"}
         ])
         df_usr.to_csv(FILE_USUARIOS, index=False)
 
