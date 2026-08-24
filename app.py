@@ -131,7 +131,8 @@ else:
         "⚙️ Perfiles Motorizados"
     ]
 
-opcion_menu = st.sidebar.radio("📌 Menú de Navegación", opciones_disponibles)
+# Menú de navegación con clave asignada
+opcion_menu = st.sidebar.radio("📌 Menú de Navegación", opciones_disponibles, key="opcion_menu")
 
 # ---------------------------------------------------------
 # TAB 1: REGISTRAR VUELTA (ADAPTATIVO SEGÚN ROL)
@@ -140,7 +141,7 @@ if opcion_menu == "🛵 Registrar Vuelta":
     # Botón de acceso directo a balance para choferes en teléfonos
     if st.session_state.get("rol_usuario") == "Chofer":
         if st.button("📊 Ver mi Balance y Avances", type="secondary", use_container_width=True):
-            st.session_state["opcion_menu"] = "🏍️ Liquidación Motorizados"
+            st.session_state.opcion_menu = "🏍️ Liquidación Motorizados"
             st.rerun()
 
     es_admin = (st.session_state.get("rol_usuario") == "Admin")
