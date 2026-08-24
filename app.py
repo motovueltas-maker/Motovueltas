@@ -3,11 +3,11 @@ import pandas as pd
 import os
 from datetime import datetime
 import urllib.parse
-import extra_streamlit_components as stx  # <--- NUEVA LÍNEA
+import extra_streamlit_components as stx
 
 st.set_page_config(page_title="MotoVueltas - Control Operativo", layout="wide", page_icon="🛵")
 
-# Inicializar gestor de cookies para mantener sesión
+# Inicializar gestor de cookies para mantener la sesión
 cookie_manager = stx.get_cookie_manager()
 
 # ---------------------------------------------------------
