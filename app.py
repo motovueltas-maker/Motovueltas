@@ -634,7 +634,7 @@ elif opcion_menu == "👥 Directorio Clientes":
     if guardar_cli_btn:
         tel_limpio = nuevo_cli_tel.strip()
         nom_limpio = nuevo_cli_nombre.strip()
-
+        
         if not nom_limpio or not tel_limpio:
             st.error("⚠️ Tanto el Nombre como el Teléfono son obligatorios.")
         else:
@@ -650,53 +650,51 @@ elif opcion_menu == "👥 Directorio Clientes":
                 }
                 df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
                 conn.write(worksheet="Clientes", data=df_clientes)
-
                 st.success(f"✅ Cliente '{nom_limpio}' registrado con éxito.")
-                st.toast(f"✅ Cliente '{nom_limpio}' registrado con éxito", icon="👤")
                 st.rerun()
 
-    # 2. EDITAR / ACTUALIZAR CLIENTE EXISTENTE (SEGUNDO)
+    # 2. EDITAR CLIENTE EXISTENTE
     if not df_clientes.empty:
         st.write("---")
         st.write("### ✏️ Editar / Actualizar Cliente Existente")
+        
+        # Crear lista combinada Nombre + Teléfono para el selectbox
         df_clientes['Select_Label'] = df_clientes['Nombre'] + " (" + df_clientes['Telefono'].astype(str) + ")"
-        opciones_clientes = df_clientes['Select_Label'].tolist()
-        cliente_sel_label = st.selectbox("Seleccionar Cliente a Modificar", opciones_clientes)
+        opciones_cli = df_clientes['Select_Label'].tolist()
+        
+        cli_sel_label = st.selectbox("Seleccionar Cliente a Modificar", opciones_cli)
 
-        idx_seleccionado = df_clientes[df_clientes['Select_Label'] == cliente_sel_label].index[0]
-        datos_cli = df_clientes.loc[idx_seleccionado]
+        idx_cli = df_clientes[df_clientes['Select_Label'] == cli_sel_label].index[0]
+        row_cli_edit = df_clientes.loc[idx_cli]
 
-        col_e1, col_e2, col_e3 = st.columns(3)
-        with col_e1:
-            edit_nombre = st.text_input("Editar Nombre", value=str(datos_cli.get('Nombre', '')))
-        with col_e2:
-            edit_tel = st.text_input("Editar Teléfono", value=str(datos_cli.get('Telefono', '')))
-        with col_e3:
-            edit_ubicacion = st.text_input("Editar Ubicación", value=str(datos_cli.get('Ubicacion', '')))
+        with st.form("form_editar_cliente"):
+            c_ed1, c_ed2, c_ed3 = st.columns(3)
+            with c_ed1:
+                edit_nom_cli = st.text_input("Editar Nombre", value=str(row_cli_edit.get('Nombre', '')))
+            with c_ed2:
+                edit_tlf_cli = st.text_input("Editar Teléfono", value=str(row_cli_edit.get('Telefono', '')))
+            with c_ed3:
+                edit_ubi_cli = st.text_input("Editar Ubicación", value=str(row_cli_edit.get('Ubicacion', '')))
 
-        if st.button("Guardar Cambios del Cliente"):
-            edit_tel_limpio = edit_tel.strip()
-            otros_telefonos = df_clientes.drop(idx_seleccionado)['Telefono'].astype(str).str.strip().tolist()
+            btn_update_cli = st.form_submit_button("Guardar Cambios del Cliente", type="primary", use_container_width=True)
 
-            if edit_tel_limpio in otros_telefonos:
-                st.error(f"❌ El número {edit_tel_limpio} ya pertenece a otro cliente registrado.")
-            else:
-                df_clientes.at[idx_seleccionado, 'Nombre'] = edit_nombre.strip()
-                df_clientes.at[idx_seleccionado, 'Telefono'] = edit_tel_limpio
-                df_clientes.at[idx_seleccionado, 'Ubicacion'] = edit_ubicacion.strip()
+        if btn_update_cli:
+            df_clientes.at[idx_cli, 'Nombre'] = edit_nom_cli.strip()
+            df_clientes.at[idx_cli, 'Telefono'] = edit_tlf_cli.strip()
+            df_clientes.at[idx_cli, 'Ubicacion'] = edit_ubi_cli.strip()
 
-                if 'Select_Label' in df_clientes.columns:
-                    df_clientes = df_clientes.drop(columns=['Select_Label'])
+            # Eliminar la columna auxiliar antes de guardar en Google Sheets
+            if 'Select_Label' in df_clientes.columns:
+                df_clientes = df_clientes.drop(columns=['Select_Label'])
 
-                conn.update(worksheet="Clientes", data=df_clientes)
-                st.toast("✅ Datos del cliente actualizados exitosamente", icon="✏️")
-                st.rerun()
+            conn.write(worksheet="Clientes", data=df_clientes)
+            st.toast("✅ Cliente actualizado con éxito", icon="👤")
+            st.rerun()
 
-    # 3. BASE DE DATOS VISUAL (TERCERO)
+    # 3. MOSTRAR TABLA DE CLIENTES
     st.write("---")
-    st.write("### 📊 Base de Datos de Clientes")
-    st.dataframe(df_clientes[['Nombre', 'Telefono', 'Ubicacion']], use_container_width=True)
-
+    st.dataframe(df_clientes, use_container_width=True)
+    
 # ---------------------------------------------------------
 # TAB 6: PERFILES DE MOTORIZADOS
 # ---------------------------------------------------------
