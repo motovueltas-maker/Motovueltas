@@ -508,14 +508,12 @@ elif opcion_menu == "💵 Corte Clientes":
 # TAB 4: LIQUIDACIÓN MOTORIZADOS CON GESTIÓN DE AVANCES
 # ---------------------------------------------------------
 elif opcion_menu == "🏍️ Liquidación Motorizados":
-    
-    es_admin = (st.session_state.get("rol_usuario") == "Admin")
-    nombre_sesion = st.session_state.get("nombre_usuario", "")
+    st.subheader("Liquidación y Balance de Motorizados")
 
     try:
-    df_avances = conn.read(worksheet="Avances", ttl=0)
-except Exception:
-    df_avances = pd.DataFrame(columns=['ID', 'Fecha', 'Motorizado', 'Monto', 'Concepto', 'Estado'])
+        df_avances = conn.read(worksheet="Avances", ttl=0)
+    except Exception:
+        df_avances = pd.DataFrame(columns=['ID', 'Fecha', 'Motorizado', 'Monto', 'Concepto', 'Estado'])
 
     validados_mot = df_servicios[(df_servicios['Estado_Validacion'] == 'Validado') & (df_servicios['Estado_Motorizado'] == 'Pendiente')].copy()
     
