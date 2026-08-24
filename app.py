@@ -170,7 +170,7 @@ if opcion_menu == "🛵 Registrar Vuelta":
 
     # Formulario para precargar la vuelta
     with st.form("form_agregar_vuelta", clear_on_submit=True):
-        lista_cli = df_clientes['Nombre'].astype(str).tolist() if not df_clientes.empty else []
+        lista_cli = [""] + (df_clientes['Nombre'].astype(str).tolist() if not df_clientes.empty else [])
         cli_sel = st.selectbox("Seleccionar Cliente", lista_cli, index=0)
         
         col1, col2 = st.columns(2)
