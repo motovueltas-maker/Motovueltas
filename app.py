@@ -221,7 +221,7 @@ if opcion_menu == "🛵 Registrar Vuelta":
                 }
                 
                 df_servicios = pd.concat([df_servicios, pd.DataFrame([nueva_fila])], ignore_index=True)
-                df_servicios.to_csv(FILE_SERVICIOS, index=False)
+                conn.update(worksheet="Servicios", data=df_servicios)
                 
                 if estado_val == "Validado":
                     st.success(f"✅ ¡Vuelta #{nuevo_id} guardada y VALIDADA por ${precio_directo:.2f}!")
@@ -260,7 +260,7 @@ elif opcion_menu == "✅ Validar Precios":
                 if st.button(f"Validar Vuelta #{row['ID']}", type="primary", key=f"btn_{row['ID']}"):
                     if precio > 0:
                         df_servicios.loc[df_servicios['ID'] == row['ID'], ['Precio_Cliente', 'Porcentaje_Comision', 'Monto_Motorizado', 'Ganancia_Empresa', 'Estado_Validacion']] = [precio, comision, monto_moto, ganancia_emp, 'Validado']
-                        df_servicios.to_csv(FILE_SERVICIOS, index=False)
+                        conn.update(worksheet="Servicios", data=df_servicios)
                         st.success(f"Vuelta #{row['ID']} validada correctamente.")
                         st.rerun()
                     else:
@@ -369,7 +369,7 @@ elif opcion_menu == "✅ Validar Precios":
                 if 'Fecha_dt' in df_servicios.columns:
                     df_servicios = df_servicios.drop(columns=['Fecha_dt'])
                     
-                df_servicios.to_csv(FILE_SERVICIOS, index=False)
+                conn.update(worksheet="Servicios", data=df_servicios)
                 st.toast(f"✅ Vuelta #{row_edit['ID']} corregida completamente", icon="✏️")
                 st.rerun()
         else:
@@ -381,13 +381,10 @@ elif opcion_menu == "✅ Validar Precios":
 elif opcion_menu == "💵 Corte Clientes":
     st.subheader("Corte de Cuenta Clientes")
     
-    FILE_ABONOS = "abonos_clientes.csv"
-    
-    if os.path.exists(FILE_ABONOS):
-        df_abonos = pd.read_csv(FILE_ABONOS)
-    else:
-        df_abonos = pd.DataFrame(columns=['ID', 'Fecha', 'Cliente', 'Monto', 'Concepto', 'Estado'])
-        df_abonos.to_csv(FILE_ABONOS, index=False)
+    try:
+    df_abonos = conn.read(worksheet="Abonos", ttl=0)
+except Exception:
+    df_abonos = pd.DataFrame(columns=['ID', 'Fecha', 'Cliente', 'Monto', 'Concepto', 'Estado'])
 
     validados_cli = df_servicios[(df_servicios['Estado_Validacion'] == 'Validado') & (df_servicios['Estado_Cliente'] == 'Pendiente')]
     
@@ -426,7 +423,7 @@ elif opcion_menu == "💵 Corte Clientes":
                         'Estado': 'Pendiente'
                     }
                     df_abonos = pd.concat([df_abonos, pd.DataFrame([nuevo_reg_ab])], ignore_index=True)
-                    df_abonos.to_csv(FILE_ABONOS, index=False)
+                    conn.update(worksheet="Abonos", data=df_abonos)
                     st.toast(f"✅ Abono de ${monto_ab:.2f} registrado a {cli_corte}", icon="💵")
                     st.rerun()
                 else:
@@ -521,12 +518,10 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
     es_admin = (st.session_state.get("rol_usuario") == "Admin")
     nombre_sesion = st.session_state.get("nombre_usuario", "")
 
-    FILE_AVANCES = "avances.csv"
-    if os.path.exists(FILE_AVANCES):
-        df_avances = pd.read_csv(FILE_AVANCES)
-    else:
-        df_avances = pd.DataFrame(columns=['ID', 'Fecha', 'Motorizado', 'Monto', 'Concepto', 'Estado'])
-        df_avances.to_csv(FILE_AVANCES, index=False)
+    try:
+    df_avances = conn.read(worksheet="Avances", ttl=0)
+except Exception:
+    df_avances = pd.DataFrame(columns=['ID', 'Fecha', 'Motorizado', 'Monto', 'Concepto', 'Estado'])
 
     validados_mot = df_servicios[(df_servicios['Estado_Validacion'] == 'Validado') & (df_servicios['Estado_Motorizado'] == 'Pendiente')].copy()
     
@@ -567,7 +562,7 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
                                 'Estado': 'Pendiente'
                             }
                             df_avances = pd.concat([df_avances, pd.DataFrame([nuevo_reg_av])], ignore_index=True)
-                            df_avances.to_csv(FILE_AVANCES, index=False)
+                            conn.update(worksheet="Avances", data=df_avances)
                             st.toast(f"✅ Avance de ${monto_av:.2f} registrado a {mot_corte}", icon="💵")
                             st.rerun()
                         else:
@@ -662,7 +657,7 @@ elif opcion_menu == "👥 Directorio Clientes":
                     "Ubicacion": nuevo_cli_ubicacion.strip() if nuevo_cli_ubicacion.strip() else "-"
                 }
                 df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
-                df_clientes.to_csv(FILE_CLIENTES, index=False)
+                conn.update(worksheet="Clientes", data=df_clientes)
 
                 st.success(f"✅ Cliente '{nom_limpio}' registrado con éxito.")
                 st.toast(f"✅ Cliente '{nom_limpio}' registrado con éxito", icon="👤")
@@ -701,7 +696,7 @@ elif opcion_menu == "👥 Directorio Clientes":
                 if 'Select_Label' in df_clientes.columns:
                     df_clientes = df_clientes.drop(columns=['Select_Label'])
 
-                df_clientes.to_csv(FILE_CLIENTES, index=False)
+                conn.update(worksheet="Clientes", data=df_clientes)
                 st.toast("✅ Datos del cliente actualizados exitosamente", icon="✏️")
                 st.rerun()
 
