@@ -649,9 +649,9 @@ elif opcion_menu == "👥 Directorio Clientes":
                 }
                 df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
                 
-                # Preparar DataFrame limpio con texto para Google Sheets
-                df_clean = df_clientes[['Nombre', 'Telefono', 'Ubicacion']].astype(str).copy()
-                conn.update(worksheet="Clientes", data=df_clean)
+                # Actualización garantizada especificando tamaño de filas
+                df_clean = df_clientes[['Nombre', 'Telefono', 'Ubicacion']].copy()
+                conn.update(worksheet="Clientes", data=df_clean, num_rows=len(df_clean) + 5)
                 st.success(f"✅ Cliente '{nom_limpio}' registrado con éxito.")
                 st.rerun()
 
@@ -685,15 +685,15 @@ elif opcion_menu == "👥 Directorio Clientes":
             df_clientes.at[idx_cli, 'Telefono'] = edit_tlf_cli.strip()
             df_clientes.at[idx_cli, 'Ubicacion'] = edit_ubi_cli.strip()
 
-            # Preparar DataFrame limpio con texto para Google Sheets
-            df_clean = df_clientes[['Nombre', 'Telefono', 'Ubicacion']].astype(str).copy()
-            conn.update(worksheet="Clientes", data=df_clean)
+            # Actualización garantizada especificando tamaño de filas
+            df_clean = df_clientes[['Nombre', 'Telefono', 'Ubicacion']].copy()
+            conn.update(worksheet="Clientes", data=df_clean, num_rows=len(df_clean) + 5)
             st.toast("✅ Cliente actualizado con éxito", icon="👤")
             st.rerun()
 
     # 3. MOSTRAR TABLA DE CLIENTES
     st.write("---")
-    st.dataframe(df_clientes[['Nombre', 'Telefono', 'Ubicacion']], use_container_width=True)
+    st.dataframe(df_clientes[['Nombre', 'Telefono', 'Ubicacion']], use_container_width=True) 
     
 # ---------------------------------------------------------
 # TAB 6: PERFILES DE MOTORIZADOS
