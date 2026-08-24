@@ -7,9 +7,6 @@ import extra_streamlit_components as stx
 
 st.set_page_config(page_title="MotoVueltas - Control Operativo", layout="wide", page_icon="🛵")
 
-# Inicializar gestor de cookies para mantener la sesión
-cookie_manager = stx.get_cookie_manager()
-
 # ---------------------------------------------------------
 # OCULTAR BARRA SUPERIOR, MENÚ DE STREAMLIT Y BOTÓN GITHUB
 # ---------------------------------------------------------
@@ -84,19 +81,25 @@ st.title("🛵 MotoVueltas - Sistema de Gestión")
 # ---------------------------------------------------------
 # CONTROL DE SESIÓN Y LOGIN DE USUARIOS (PERSISTENTE)
 # ---------------------------------------------------------
+# Inicializar gestor de cookies de forma segura
+cookie_manager = stx.get_cookie_manager(key="motovueltas_cookie_manager")
+
 if "usuario_logueado" not in st.session_state:
     st.session_state["usuario_logueado"] = None
     st.session_state["rol_usuario"] = None
     st.session_state["nombre_usuario"] = None
 
-# Recuperar usuario desde la cookie si existe
-cookie_user = cookie_manager.get(cookie="motovueltas_user")
-if cookie_user and st.session_state["usuario_logueado"] is None:
-    match_cookie = df_usuarios[df_usuarios['Usuario'] == cookie_user]
-    if not match_cookie.empty:
-        st.session_state["usuario_logueado"] = cookie_user
-        st.session_state["rol_usuario"] = match_cookie.iloc[0]['Rol']
-        st.session_state["nombre_usuario"] = match_cookie.iloc[0]['Nombre']
+# Intentar recuperar usuario desde la cookie
+try:
+    cookie_user = cookie_manager.get(cookie="motovueltas_user")
+    if cookie_user and st.session_state["usuario_logueado"] is None:
+        match_cookie = df_usuarios[df_usuarios['Usuario'] == cookie_user]
+        if not match_cookie.empty:
+            st.session_state["usuario_logueado"] = cookie_user
+            st.session_state["rol_usuario"] = match_cookie.iloc[0]['Rol']
+            st.session_state["nombre_usuario"] = match_cookie.iloc[0]['Nombre']
+except Exception:
+    pass
 
 # Pantalla de Inicio de Sesión
 if st.session_state["usuario_logueado"] is None:
