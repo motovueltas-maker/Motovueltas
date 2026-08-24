@@ -698,32 +698,44 @@ elif opcion_menu == "👥 Directorio Clientes":
 elif opcion_menu == "⚙️ Perfiles Motorizados":
     st.subheader("Gestión de Motorizados y Comisiones Base")
 
+    # Asegurar que la columna Telefono exista en el DataFrame
+    if 'Telefono' not in df_motorizados.columns:
+        df_motorizados['Telefono'] = "-"
+
     # 1. LISTA ACTUAL DE MOTORIZADOS
     st.write("### 🏍️ Motorizados Registrados")
-    st.dataframe(df_motorizados[['Nombre', 'Comision_Base']], use_container_width=True)
+    st.dataframe(df_motorizados[['Nombre', 'Telefono', 'Comision_Base']], use_container_width=True)
 
     # 2. AGREGAR NUEVO MOTORIZADO
     st.write("---")
     st.write("### ➕ Agregar Nuevo Motorizado")
     with st.form("form_agregar_motorizado", clear_on_submit=True):
-        col_m1, col_m2 = st.columns(2)
+        col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
             nuevo_mot_nombre = st.text_input("Nombre del Chofer")
         with col_m2:
+            nuevo_mot_tel = st.text_input("Teléfono / WhatsApp (ID Único)")
+        with col_m3:
             nuevo_mot_comision = st.number_input("% Comisión Predeterminada", min_value=0.0, max_value=100.0, value=66.67, step=0.5)
 
-        guardar_mot_btn = st.form_submit_button("Guardar Motorizado", type="primary")
+        guardar_mot_btn = st.form_submit_button("Guardar Motorizado", type="primary", use_container_width=True)
 
     if guardar_mot_btn:
         nom_mot_limpio = nuevo_mot_nombre.strip()
-        if not nom_mot_limpio:
-            st.error("⚠️ El nombre del motorizado es obligatorio.")
+        tel_mot_limpio = nuevo_mot_tel.strip()
+        
+        if not nom_mot_limpio or not tel_mot_limpio:
+            st.error("⚠️ Tanto el Nombre como el Teléfono son obligatorios.")
         else:
-            motos_existentes = df_motorizados['Nombre'].astype(str).str.strip().tolist() if not df_motorizados.empty else []
-            if nom_mot_limpio in motos_existentes:
-                st.error(f"❌ Ya existe un motorizado registrado con el nombre '{nom_mot_limpio}'.")
+            telefonos_existentes = df_motorizados['Telefono'].fillna("").astype(str).str.strip().tolist() if not df_motorizados.empty else []
+            if tel_mot_limpio in telefonos_existentes:
+                st.error(f"❌ Ya existe un motorizado registrado con el teléfono {tel_mot_limpio}.")
             else:
-                nuevo_reg_mot = {"Nombre": nom_mot_limpio, "Comision_Base": float(nuevo_mot_comision)}
+                nuevo_reg_mot = {
+                    "Nombre": nom_mot_limpio, 
+                    "Telefono": tel_mot_limpio, 
+                    "Comision_Base": float(nuevo_mot_comision)
+                }
                 df_motorizados = pd.concat([df_motorizados, pd.DataFrame([nuevo_reg_mot])], ignore_index=True)
                 df_motorizados.to_csv(FILE_MOTORIZADOS, index=False)
                 st.success(f"✅ Motorizado '{nom_mot_limpio}' registrado con éxito.")
@@ -732,19 +744,24 @@ elif opcion_menu == "⚙️ Perfiles Motorizados":
     # 3. EDITAR MOTORIZADO EXISTENTE
     if not df_motorizados.empty:
         st.write("---")
-        st.write("### ✏️ Editar Nombre o Comisión de Motorizado")
+        st.write("### ✏️ Editar Motorizado Existente")
         
-        lista_motos_edit = df_motorizados['Nombre'].tolist()
-        moto_sel_edit = st.selectbox("Seleccionar Motorizado a Modificar", lista_motos_edit)
+        df_temp_m = df_motorizados.copy()
+        df_temp_m['Select_Label'] = df_temp_m['Nombre'].astype(str) + " (" + df_temp_m['Telefono'].fillna("").astype(str) + ")"
+        opciones_mot = df_temp_m['Select_Label'].tolist()
+        
+        mot_sel_label = st.selectbox("Seleccionar Motorizado a Modificar", opciones_mot)
 
-        idx_mot = df_motorizados[df_motorizados['Nombre'] == moto_sel_edit].index[0]
+        idx_mot = df_temp_m[df_temp_m['Select_Label'] == mot_sel_label].index[0]
         row_mot_edit = df_motorizados.loc[idx_mot]
 
         with st.form("form_editar_motorizado"):
-            col_ed_m1, col_ed_m2 = st.columns(2)
+            col_ed_m1, col_ed_m2, col_ed_m3 = st.columns(3)
             with col_ed_m1:
                 edit_nom_mot = st.text_input("Editar Nombre", value=str(row_mot_edit.get('Nombre', '')))
             with col_ed_m2:
+                edit_tel_mot = st.text_input("Editar Teléfono", value=str(row_mot_edit.get('Telefono', '')))
+            with col_ed_m3:
                 com_val_act = float(row_mot_edit.get('Comision_Base', 66.67))
                 edit_com_mot = st.number_input("Editar % Comisión Base", min_value=0.0, max_value=100.0, value=com_val_act, step=0.5)
 
@@ -752,11 +769,14 @@ elif opcion_menu == "⚙️ Perfiles Motorizados":
 
         if btn_update_mot:
             nom_edit_limpio = edit_nom_mot.strip()
-            if not nom_edit_limpio:
-                st.error("⚠️ El nombre no puede quedar vacío.")
+            tel_edit_limpio = edit_tel_mot.strip()
+
+            if not nom_edit_limpio or not tel_edit_limpio:
+                st.error("⚠️ El nombre y el teléfono son obligatorios.")
             else:
                 # Actualizar el registro en el DataFrame original
                 df_motorizados.at[idx_mot, 'Nombre'] = nom_edit_limpio
+                df_motorizados.at[idx_mot, 'Telefono'] = tel_edit_limpio
                 df_motorizados.at[idx_mot, 'Comision_Base'] = float(edit_com_mot)
 
                 df_motorizados.to_csv(FILE_MOTORIZADOS, index=False)
