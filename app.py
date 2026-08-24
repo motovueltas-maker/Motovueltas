@@ -220,8 +220,8 @@ if opcion_menu == "🛵 Registrar Vuelta":
                     'Estado_Motorizado': 'Pendiente'
                 }
                 
-                df_servicios = pd.concat([df_servicios, pd.DataFrame([nueva_fila])], ignore_index=True)
-                conn.update(worksheet="Servicios", data=df_servicios)
+                df_servicios_clean = df_servicios.reset_index(drop=True)
+                conn.update(worksheet="Servicios", data=df_servicios_clean)
                 
                 if estado_val == "Validado":
                     st.success(f"✅ ¡Vuelta #{nuevo_id} guardada y VALIDADA por ${precio_directo:.2f}!")
@@ -650,8 +650,8 @@ elif opcion_menu == "👥 Directorio Clientes":
                 df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
                 
                 # Guardar DataFrame estructurado
-                df_clean = pd.DataFrame(df_clientes[['Nombre', 'Telefono', 'Ubicacion']].values, columns=['Nombre', 'Telefono', 'Ubicacion'])
-                conn.update(worksheet="Clientes", data=df_clean)
+                df_clientes_clean = df_clientes[['Nombre', 'Telefono', 'Ubicacion']].reset_index(drop=True)
+                conn.update(worksheet="Clientes", data=df_clientes_clean)
                 st.success(f"✅ Cliente '{nom_limpio}' registrado con éxito.")
                 st.rerun()
 
@@ -686,8 +686,8 @@ elif opcion_menu == "👥 Directorio Clientes":
             df_clientes.at[idx_cli, 'Ubicacion'] = edit_ubi_cli.strip()
 
             # Guardar recreando la estructura limpia sin índices ni metadatos extra
-            df_clean = pd.DataFrame(df_clientes[['Nombre', 'Telefono', 'Ubicacion']].values, columns=['Nombre', 'Telefono', 'Ubicacion'])
-            conn.update(worksheet="Clientes", data=df_clean)
+            df_clientes_clean = df_clientes[['Nombre', 'Telefono', 'Ubicacion']].reset_index(drop=True)
+            conn.update(worksheet="Clientes", data=df_clientes_clean)
             st.toast("✅ Cliente actualizado con éxito", icon="👤")
             st.rerun()
 
