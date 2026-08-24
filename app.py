@@ -19,27 +19,22 @@ hide_streamlit_style = """
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
+from streamlit_gsheets import GSheetsConnection
+
 # ---------------------------------------------------------
-# MANEJO DE ARCHIVOS CSV (PERSISTENCIA SEGURA EN GITHUB)
+# CONEXIÓN PERSISTENTE A GOOGLE SHEETS
 # ---------------------------------------------------------
-FILE_CLIENTES = "clientes.csv"
-FILE_MOTORIZADOS = "motorizados.csv"
-FILE_SERVICIOS = "servicios.csv"
-FILE_USUARIOS = "usuarios.csv"
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 def cargar_datos():
-    if os.path.exists(FILE_CLIENTES):
-        df_cli = pd.read_csv(FILE_CLIENTES)
-        if 'Ubicacion' not in df_cli.columns:
-            df_cli['Ubicacion'] = "-"
-            df_cli.to_csv(FILE_CLIENTES, index=False)
-    else:
+    try:
+        df_cli = conn.read(worksheet="Clientes", ttl=0)
+    except Exception:
         df_cli = pd.DataFrame([{"Nombre": "Cliente General", "Telefono": "04140000000", "Ubicacion": "Centro"}])
-        df_cli.to_csv(FILE_CLIENTES, index=False)
-
-    if os.path.exists(FILE_MOTORIZADOS):
-        df_mot = pd.read_csv(FILE_MOTORIZADOS)
-    else:
+        
+    try:
+        df_mot = conn.read(worksheet="Motorizados", ttl=0)
+    except Exception:
         df_mot = pd.DataFrame([
             {"Nombre": "Omar", "Comision_Base": 66.67},
             {"Nombre": "Jhoiner", "Comision_Base": 66.67},
@@ -47,18 +42,13 @@ def cargar_datos():
             {"Nombre": "Génesis", "Comision_Base": 66.67},
             {"Nombre": "Esneyder", "Comision_Base": 100.0}
         ])
-        df_mot.to_csv(FILE_MOTORIZADOS, index=False)
+        
+    try:
+        df_ser = conn.read(worksheet="Servicios", ttl=0)
+    except Exception:
+        df_ser = pd.DataFrame(columns=['ID', 'Fecha', 'Motorizado', 'Cliente', 'Origen', 'Destino', 'Detalle', 'Precio_Cliente', 'Porcentaje_Comision', 'Monto_Motorizado', 'Ganancia_Empresa', 'Estado_Validacion', 'Estado_Cliente', 'Estado_Motorizado'])
 
-    if os.path.exists(FILE_SERVICIOS):
-        df_ser = pd.read_csv(FILE_SERVICIOS)
-    else:
-        df_ser = pd.DataFrame(columns=[
-            'ID', 'Fecha', 'Motorizado', 'Cliente', 'Origen', 'Destino', 'Detalle',
-            'Precio_Cliente', 'Porcentaje_Comision', 'Monto_Motorizado',
-            'Ganancia_Empresa', 'Estado_Validacion', 'Estado_Cliente', 'Estado_Motorizado'
-        ])
-        df_ser.to_csv(FILE_SERVICIOS, index=False)
-
+    FILE_USUARIOS = "usuarios.csv"
     if os.path.exists(FILE_USUARIOS):
         df_usr = pd.read_csv(FILE_USUARIOS)
     else:
@@ -69,11 +59,8 @@ def cargar_datos():
             {"Usuario": "deiby", "Clave": "8455", "Nombre": "Deiby", "Rol": "Chofer"},
             {"Usuario": "genesis", "Clave": "7852", "Nombre": "Génesis", "Rol": "Chofer"}
         ])
-        df_usr.to_csv(FILE_USUARIOS, index=False)
 
     return df_cli, df_mot, df_ser, df_usr
-
-df_clientes, df_motorizados, df_servicios, df_usuarios = cargar_datos()
 
 st.title("🛵 MotoVueltas - Sistema de Gestión")
 
