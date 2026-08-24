@@ -175,9 +175,9 @@ if opcion_menu == "🛵 Registrar Vuelta":
         
         col1, col2 = st.columns(2)
         with col1:
-            origen = st.text_input("Desde", value="Local")
+            origen = st.text_input("Desde", placeholder="Local")
         with col2:
-            destino = st.text_input("Hasta", value="Local")
+            destino = st.text_input("Hasta", placeholder="Local")
         
         if es_admin:
             precio_directo = st.number_input("Precio Cliente ($) (Opcional - Valida de inmediato si > 0)", min_value=0.0, value=0.0, step=0.50)
