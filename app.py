@@ -59,6 +59,8 @@ def cargar_datos():
             {"Usuario": "deiby", "Clave": "8455", "Nombre": "Deiby", "Rol": "Chofer"},
             {"Usuario": "genesis", "Clave": "7852", "Nombre": "Génesis", "Rol": "Chofer"}
         ])
+        
+    return df_cli, df_mot, df_ser, df_usr
 
 df_clientes, df_motorizados, df_servicios, df_usuarios = cargar_datos()
 
