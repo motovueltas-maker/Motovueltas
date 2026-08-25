@@ -460,9 +460,9 @@ elif opcion_menu == "💵 Corte Clientes":
         with col_c1:
             cli_corte = st.selectbox("Seleccionar Cliente", sorted(validados_cli['Cliente'].unique().tolist()), key="sel_cli_tab3")
         with col_c2:
-            f_inicio = st.date_input("Fecha Desde", value=None, key="f_ini_tab3")
+            f_corte_ini = st.date_input("Fecha Desde", value=None, format="DD/MM/YYYY", key="corte_f_ini")
         with col_c3:
-            f_fin = st.date_input("Fecha Hasta", value=None, key="f_fin_tab3")
+            f_corte_fin = st.date_input("Fecha Hasta", value=None, format="DD/MM/YYYY", key="corte_f_fin")
 
         # 2. Registrar Abono del Cliente
         with st.expander(f"➕ Registrar Abono de {cli_corte}", expanded=False):
@@ -499,10 +499,10 @@ elif opcion_menu == "💵 Corte Clientes":
         df_c = validados_cli[validados_cli['Cliente'] == cli_corte].copy()
         df_c['Fecha_dt'] = pd.to_datetime(df_c['Fecha'].astype(str).str[:10], errors='coerce')
 
-        if f_inicio is not None:
-            df_c = df_c[df_c['Fecha_dt'] >= pd.to_datetime(f_inicio)]
-        if f_fin is not None:
-            df_c = df_c[df_c['Fecha_dt'] <= pd.to_datetime(f_fin)]
+        if f_corte_ini is not None:
+            df_c = df_c[df_c['Fecha_dt'] >= pd.to_datetime(f_corte_ini)]
+        if f_corte_fin is not None:
+            df_c = df_c[df_c['Fecha_dt'] <= pd.to_datetime(f_corte_fin)]
 
         if not df_c.empty:
             df_c['Fecha_Corta'] = df_c['Fecha_dt'].dt.strftime('%d/%m')
