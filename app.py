@@ -253,7 +253,7 @@ if opcion_menu == "🛵 Registrar Vuelta":
                 st.error("⚠️ Debes ingresar al menos el destino de la carrera.") 
                 
 # ---------------------------------------------------------
-# TAB 2: VALIDAR PRECIOS Y EDITAR VUELTAS EN TABLA
+# TAB 2: VALIDAR PRECIOS Y EDITAR VUELTAS (COMPLETO)
 # ---------------------------------------------------------
 elif opcion_menu == "✅ Validar Precios":
     st.subheader("Validación y Corrección de Vueltas")
@@ -338,6 +338,105 @@ elif opcion_menu == "✅ Validar Precios":
                         st.error("El precio debe ser mayor a $0.")
     else:
         st.info("No hay vueltas pendientes por validar.")
+
+    # 2. CORREGIR / EDITAR VUELTAS YA REGISTRADAS (CON FILTROS)
+    st.write("---")
+    st.write("### ✏️ Corregir / Editar Vueltas Ya Registradas")
+
+    if not df_servicios.empty:
+        # Filtros de Búsqueda
+        f_col1, f_col2, f_col3, f_col4 = st.columns(4)
+        with f_col1:
+            motos_lista_filtro = ["Todos"] + (df_motorizados['Nombre'].tolist() if not df_motorizados.empty else [])
+            filtro_moto = st.selectbox("Filtrar por Motorizado", motos_lista_filtro, key="f_edit_moto")
+        with f_col2:
+            cli_lista_filtro = ["Todos"] + (df_clientes['Nombre'].tolist() if not df_clientes.empty else [])
+            filtro_cli = st.selectbox("Filtrar por Cliente", cli_lista_filtro, key="f_edit_cli")
+        with f_col3:
+            filtro_f_ini = st.date_input("Desde Fecha", value=None, key="f_edit_ini")
+        with f_col4:
+            filtro_f_fin = st.date_input("Hasta Fecha", value=None, key="f_edit_fin")
+
+        # Aplicar Filtros sobre el DataFrame
+        df_editables = df_servicios.copy()
+        df_editables['Fecha_dt'] = pd.to_datetime(df_editables['Fecha'].astype(str).str[:10], errors='coerce')
+
+        if filtro_moto != "Todos":
+            df_editables = df_editables[df_editables['Motorizado'] == filtro_moto]
+        if filtro_cli != "Todos":
+            df_editables = df_editables[df_editables['Cliente'] == filtro_cli]
+        if filtro_f_ini is not None:
+            df_editables = df_editables[df_editables['Fecha_dt'] >= pd.to_datetime(filtro_f_ini)]
+        if filtro_f_fin is not None:
+            df_editables = df_editables[df_editables['Fecha_dt'] <= pd.to_datetime(filtro_f_fin)]
+
+        if not df_editables.empty:
+            lista_opciones_edit = [
+                f"ID #{r['ID']} - {r['Fecha'][:10]} | 🛵 {r['Motorizado']} | 👤 {r['Cliente']} (${r['Precio_Cliente']:.2f})" 
+                for _, r in df_editables.sort_values(by='ID', ascending=False).iterrows()
+            ]
+            
+            sel_vuelta_edit = st.selectbox("Seleccionar Vuelta a Modificar", lista_opciones_edit)
+            
+            id_sel_edit = int(sel_vuelta_edit.split(" - ")[0].replace("ID #", ""))
+            row_edit = df_servicios[df_servicios['ID'] == id_sel_edit].iloc[0]
+
+            with st.form("form_editar_vuelta_registrada"):
+                st.write(f"**Modificando Vuelta #{id_sel_edit}**")
+                
+                col_e1, col_e2, col_e3 = st.columns(3)
+                with col_e1:
+                    try:
+                        f_edit_orig = datetime.strptime(str(row_edit['Fecha'])[:10], "%Y-%m-%d").date()
+                    except:
+                        f_edit_orig = datetime.now().date()
+                    edit_fecha = st.date_input("Fecha", value=f_edit_orig)
+                with col_e2:
+                    motos_list_ed = df_motorizados['Nombre'].tolist() if not df_motorizados.empty else [row_edit['Motorizado']]
+                    idx_m = motos_list_ed.index(row_edit['Motorizado']) if row_edit['Motorizado'] in motos_list_ed else 0
+                    edit_moto = st.selectbox("Motorizado", motos_list_ed, index=idx_m)
+                with col_e3:
+                    cli_list_ed = df_clientes['Nombre'].tolist() if not df_clientes.empty else [row_edit['Cliente']]
+                    idx_c = cli_list_ed.index(row_edit['Cliente']) if row_edit['Cliente'] in cli_list_ed else 0
+                    edit_cli = st.selectbox("Cliente", cli_list_ed, index=idx_c)
+
+                col_e4, col_e5, col_e6, col_e7 = st.columns(4)
+                with col_e4:
+                    edit_orig = st.text_input("Desde", value=str(row_edit['Origen']))
+                with col_e5:
+                    edit_dest = st.text_input("Hasta", value=str(row_edit['Destino']))
+                with col_e6:
+                    edit_precio = st.number_input("Precio ($)", min_value=0.0, value=float(row_edit['Precio_Cliente']), step=0.50)
+                with col_e7:
+                    edit_comision = st.number_input("% Comisión", min_value=0.0, max_value=100.0, value=float(row_edit.get('Porcentaje_Comision', 66.67)), step=0.5)
+
+                btn_guardar_edicion = st.form_submit_button("💾 Guardar Cambios de la Vuelta", type="primary", use_container_width=True)
+
+            if btn_guardar_edicion:
+                m_moto_ed = round(edit_precio * (edit_comision / 100.0), 2)
+                g_emp_ed = round(edit_precio - m_moto_ed, 2)
+                
+                hora_str_ed = str(row_edit['Fecha'])[11:] if len(str(row_edit['Fecha'])) > 10 else datetime.now().strftime('%H:%M')
+                f_final_ed = f"{edit_fecha} {hora_str_ed}".strip()
+
+                df_servicios.loc[df_servicios['ID'] == id_sel_edit, [
+                    'Fecha', 'Motorizado', 'Cliente', 'Origen', 'Destino', 
+                    'Precio_Cliente', 'Porcentaje_Comision', 
+                    'Monto_Motorizado', 'Ganancia_Empresa'
+                ]] = [
+                    f_final_ed, edit_moto, edit_cli, 
+                    edit_orig.strip() if edit_orig.strip() else "Local", 
+                    edit_dest.strip() if edit_dest.strip() else "Local", 
+                    edit_precio, edit_comision, m_moto_ed, g_emp_ed
+                ]
+
+                df_servicios.to_csv(FILE_SERVICIOS, index=False)
+                st.toast(f"✅ Vuelta #{id_sel_edit} actualizada correctamente", icon="💾")
+                st.rerun()
+        else:
+            st.warning("No hay vueltas registradas que coincidan con los filtros seleccionados.")
+    else:
+        st.info("Aún no hay vueltas registradas en la base de datos.")
         
 # ---------------------------------------------------------
 # TAB 3: CORTE CLIENTES, ABONOS Y ENVÍO DIRECTO A WHATSAPP
