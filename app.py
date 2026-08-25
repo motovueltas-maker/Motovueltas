@@ -576,7 +576,7 @@ elif opcion_menu == "💵 Corte Clientes":
                     st.warning("⚠️ Sin número registrado en Clientes para envío directo.")
 
 # ---------------------------------------------------------
-# TAB 4: LIQUIDACIÓN MOTORIZADOS
+# TAB 4: LIQUIDACIÓN MOTORIZADOS (ENVÍO Y RESET UNIFICADO)
 # ---------------------------------------------------------
 elif opcion_menu == "🏍️ Liquidación Motorizados":
     st.subheader("Liquidación y Resumen de Motorizados")
@@ -590,8 +590,15 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
     with col_m3:
         f_liq_fin = st.date_input("Fecha Hasta", value=None, format="DD/MM/YYYY", key="liq_f_fin")
 
-    # Filtrar vueltas del motorizado
-    df_m = df_servicios[(df_servicios['Motorizado'] == mot_corte) & (df_servicios['Estado_Validacion'] == 'Validado')].copy()
+    # Filtrar solo vueltas validadas PENDIENTES
+    if 'Estado_Liquidacion' not in df_servicios.columns:
+        df_servicios['Estado_Liquidacion'] = 'Pendiente'
+
+    df_m = df_servicios[
+        (df_servicios['Motorizado'] == mot_corte) & 
+        (df_servicios['Estado_Validacion'] == 'Validado') & 
+        (df_servicios['Estado_Liquidacion'] != 'Liquidado')
+    ].copy()
     
     if not df_m.empty:
         df_m['Fecha_dt'] = pd.to_datetime(df_m['Fecha'].astype(str).str[:10], errors='coerce')
@@ -601,13 +608,11 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
             df_m = df_m[df_m['Fecha_dt'] <= pd.to_datetime(f_liq_fin)]
 
     if not df_m.empty:
-        # Ordenar vueltas por fecha
         df_sorted = df_m.sort_values(by='Fecha_dt')
         
-        # Agrupar vueltas solo por DÍA y MES (DD/MM)
+        # Agrupar por DÍA y MES (DD/MM)
         dias_agrupados = df_sorted.groupby(df_sorted['Fecha_dt'].dt.strftime('%d/%m'), sort=False)
         
-        # Armar cuerpo del mensaje para WhatsApp
         msj_wa = f"🛵 *LIQUIDACIÓN DE MOTOVUELTAS*\n"
         msj_wa += f"Chofer: *{mot_corte}*\n"
         msj_wa += "-----------------------------------\n\n"
@@ -619,16 +624,14 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
             for _, r in grupo.iterrows():
                 precio_c = float(r['Precio_Cliente'])
                 total_servicios_cliente += precio_c
-                msj_wa += f"• {r['Origen']} ➔ {r['Destino']}: ${precio_c:.2f}\n"
+                msj_wa += f"• {r['Origen']} -> {r['Destino']}: ${precio_c:.2f}\n"
             msj_wa += "\n"
             
-        # Obtener comisión del chofer
         com_base = df_motorizados.loc[df_motorizados['Nombre'] == mot_corte, 'Comision_Base'].values
         pct_comision = float(com_base[0]) if len(com_base) > 0 else 66.67
         
         ingreso_chofer = round(total_servicios_cliente * (pct_comision / 100.0), 2)
         
-        # Obtener avances / adelantos recibidos en el período
         if 'df_avances' in globals() and not df_avances.empty:
             avances_mot = df_avances[(df_avances['Motorizado'] == mot_corte) & (df_avances['Estado'] == 'Pendiente')]
             total_avances_periodo = float(avances_mot['Monto'].sum()) if not avances_mot.empty else 0.0
@@ -644,7 +647,6 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
             msj_wa += f"🔻 Avances / Adelantos: *-${total_avances_periodo:.2f}*\n"
         msj_wa += f"✅ *NETO A PAGAR: ${neto_final:.2f}*"
         
-        # Generar enlace directo a WhatsApp
         row_moto = df_motorizados[df_motorizados['Nombre'] == mot_corte]
         num_tlf = ""
         if not row_moto.empty and 'Telefono' in row_moto.columns:
@@ -655,15 +657,31 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
         msj_encoded = urllib.parse.quote(msj_wa)
         link_wa = f"https://wa.me/{num_tlf}?text={msj_encoded}"
 
-        # Botón para enviar por WhatsApp
-        st.link_button("📲 Enviar Liquidación por WhatsApp", link_wa, type="primary", use_container_width=True)
-        
-        # Mostrar resumen en pantalla
+        # BOTÓN ÚNICO: Envía por WhatsApp y resetea el conteo en pantalla
+        if st.button("📲 Enviar Liquidación por WhatsApp y Liquidar", type="primary", use_container_width=True):
+            # 1. Marcar carreras actuales como Liquidadas
+            ids_a_cerrar = df_sorted['ID'].tolist()
+            df_servicios.loc[df_servicios['ID'].isin(ids_a_cerrar), 'Estado_Liquidacion'] = 'Liquidado'
+            df_servicios.to_csv(FILE_SERVICIOS, index=False)
+
+            # 2. Marcar avances como Pagados
+            if 'df_avances' in globals() and not df_avances.empty:
+                df_avances.loc[
+                    (df_avances['Motorizado'] == mot_corte) & (df_avances['Estado'] == 'Pendiente'), 
+                    'Estado'
+                ] = 'Pagado'
+                df_avances.to_csv(FILE_AVANCES, index=False)
+
+            # 3. Abrir WhatsApp en una pestaña nueva y recargar la app
+            st.markdown(f'<script>window.open("{link_wa}", "_blank");</script>', unsafe_allow_html=True)
+            st.toast(f"✅ Liquidación enviada y conteo de {mot_corte} reiniciado.", icon="🎉")
+            st.rerun()
+
         st.markdown("---")
-        st.write("### 📄 Vista previa de servicios a liquidar")
+        st.write("### 📄 Vista previa de servicios pendientes por liquidar")
         st.dataframe(df_sorted[['Fecha', 'Origen', 'Destino', 'Precio_Cliente', 'Monto_Motorizado']], use_container_width=True)
     else:
-        st.info("No hay vueltas validadas registradas para este motorizado en el rango seleccionado.") 
+        st.info(f"No hay vueltas pendientes por liquidar para **{mot_corte}**.")
         
 # ---------------------------------------------------------
 # TAB 5: DIRECTORIO DE CLIENTES (FORMULARIO CON RESET NATIVO)
