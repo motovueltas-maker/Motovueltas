@@ -291,7 +291,7 @@ elif opcion_menu == "✅ Validar Precios":
                     f_val_orig = datetime.strptime(str(row['Fecha'])[:10], "%Y-%m-%d").date()
                 except:
                     f_val_orig = datetime.now().date()
-                val_fecha = st.date_input("Fec", value=f_val_orig, key=f"vf_{row['ID']}", label_visibility="collapsed")
+                val_fecha = st.date_input("Fec", value=f_val_orig, format="DD/MM/YYYY", key=f"vf_{row['ID']}", label_visibility="collapsed")
 
             with c3:
                 idx_c = lista_cli_val.index(row['Cliente']) if row['Cliente'] in lista_cli_val else 0
@@ -683,7 +683,10 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
 
         st.markdown("---")
         st.write("### 📄 Vista previa de servicios pendientes por liquidar")
-        st.dataframe(df_sorted[['Fecha', 'Origen', 'Destino', 'Precio_Cliente', 'Monto_Motorizado']], use_container_width=True)
+        # Formatear la fecha a DD/MM para la vista previa
+        df_display = df_sorted.copy()
+        df_display['Fecha'] = df_display['Fecha_dt'].dt.strftime('%d/%m')
+        st.dataframe(df_display[['Fecha', 'Origen', 'Destino', 'Precio_Cliente', 'Monto_Motorizado']], use_container_width=True)
     else:
         st.info(f"No hay vueltas pendientes por liquidar para **{mot_corte}**.")
         
