@@ -576,7 +576,7 @@ elif opcion_menu == "💵 Corte Clientes":
                     st.warning("⚠️ Sin número registrado en Clientes para envío directo.")
 
 # ---------------------------------------------------------
-# TAB 4: LIQUIDACIÓN MOTORIZADOS (ENVÍO Y RESET UNIFICADO)
+# TAB 4: LIQUIDACIÓN MOTORIZADOS (MANTIENE VUELTAS EN BASE DE DATOS)
 # ---------------------------------------------------------
 elif opcion_menu == "🏍️ Liquidación Motorizados":
     st.subheader("Liquidación y Resumen de Motorizados")
@@ -590,10 +590,11 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
     with col_m3:
         f_liq_fin = st.date_input("Fecha Hasta", value=None, format="DD/MM/YYYY", key="liq_f_fin")
 
-    # Filtrar solo vueltas validadas PENDIENTES
+    # Asegurar columna de estado de liquidación sin borrar nada
     if 'Estado_Liquidacion' not in df_servicios.columns:
         df_servicios['Estado_Liquidacion'] = 'Pendiente'
 
+    # Filtrar solo vueltas validadas PENDIENTES DE LIQUIDAR AL CHOFER
     df_m = df_servicios[
         (df_servicios['Motorizado'] == mot_corte) & 
         (df_servicios['Estado_Validacion'] == 'Validado') & 
@@ -657,14 +658,13 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
         msj_encoded = urllib.parse.quote(msj_wa)
         link_wa = f"https://wa.me/{num_tlf}?text={msj_encoded}"
 
-        # BOTÓN ÚNICO: Envía por WhatsApp y resetea el conteo en pantalla
+        # Botón para liquidar y resetear vista del chofer
         if st.button("📲 Enviar Liquidación por WhatsApp y Liquidar", type="primary", use_container_width=True):
-            # 1. Marcar carreras actuales como Liquidadas
             ids_a_cerrar = df_sorted['ID'].tolist()
+            # Marca como liquidado al chofer (SIN borrar del CSV)
             df_servicios.loc[df_servicios['ID'].isin(ids_a_cerrar), 'Estado_Liquidacion'] = 'Liquidado'
             df_servicios.to_csv(FILE_SERVICIOS, index=False)
 
-            # 2. Marcar avances como Pagados
             if 'df_avances' in globals() and not df_avances.empty:
                 df_avances.loc[
                     (df_avances['Motorizado'] == mot_corte) & (df_avances['Estado'] == 'Pendiente'), 
@@ -672,16 +672,15 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
                 ] = 'Pagado'
                 df_avances.to_csv(FILE_AVANCES, index=False)
 
-            # 3. Abrir WhatsApp en una pestaña nueva y recargar la app
             st.markdown(f'<script>window.open("{link_wa}", "_blank");</script>', unsafe_allow_html=True)
-            st.toast(f"✅ Liquidación enviada y conteo de {mot_corte} reiniciado.", icon="🎉")
+            st.toast(f"✅ Liquidación realizada. Vista de {mot_corte} reiniciada.", icon="🎉")
             st.rerun()
 
         st.markdown("---")
         st.write("### 📄 Vista previa de servicios pendientes por liquidar")
         st.dataframe(df_sorted[['Fecha', 'Origen', 'Destino', 'Precio_Cliente', 'Monto_Motorizado']], use_container_width=True)
     else:
-        st.info(f"No hay vueltas pendientes por liquidar para **{mot_corte}**.")
+        st.info(f"No hay vueltas pendientes por liquidar para **{mot_corte}**.") 
         
 # ---------------------------------------------------------
 # TAB 5: DIRECTORIO DE CLIENTES (FORMULARIO CON RESET NATIVO)
