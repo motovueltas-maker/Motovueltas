@@ -135,6 +135,7 @@ if st.sidebar.button("Cerrar Sesión", type="secondary"):
     st.session_state["usuario_logueado"] = None
     st.session_state["rol_usuario"] = None
     st.session_state["nombre_usuario"] = None
+    st.query_params.clear()  # Borra la sesión retenida en la URL
     st.rerun()
 
 st.sidebar.write("---")
