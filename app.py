@@ -82,12 +82,25 @@ df_clientes, df_motorizados, df_servicios, df_usuarios = cargar_datos()
 st.title("🛵 MotoVueltas - Sistema de Gestión")
 
 # ---------------------------------------------------------
-# CONTROL DE SESIÓN Y LOGIN DE USUARIOS
+# CONTROL DE SESIÓN PERSISTENTE (MANTENER LOGIN AL RECARGAR)
 # ---------------------------------------------------------
+# 1. Recuperar sesión desde los parámetros de la URL si el usuario recarga la página
+query_params = st.query_params
+usr_url = query_params.get("usr", None)
+
 if "usuario_logueado" not in st.session_state:
-    st.session_state["usuario_logueado"] = None
-    st.session_state["rol_usuario"] = None
-    st.session_state["nombre_usuario"] = None
+    if usr_url and not df_usuarios.empty:
+        match_url = df_usuarios[df_usuarios['Usuario'] == usr_url.lower()]
+        if not match_url.empty:
+            st.session_state["usuario_logueado"] = match_url.iloc[0]['Usuario']
+            st.session_state["rol_usuario"] = match_url.iloc[0]['Rol']
+            st.session_state["nombre_usuario"] = match_url.iloc[0]['Nombre']
+        else:
+            st.session_state["usuario_logueado"] = None
+    else:
+        st.session_state["usuario_logueado"] = None
+        st.session_state["rol_usuario"] = None
+        st.session_state["nombre_usuario"] = None
 
 # Pantalla de Inicio de Sesión si no hay usuario activo
 if st.session_state["usuario_logueado"] is None:
@@ -96,18 +109,23 @@ if st.session_state["usuario_logueado"] is None:
         user_input = st.text_input("Usuario (ej: esneyder, omar)").strip().lower()
         pass_input = st.text_input("Contraseña", type="password")
         btn_login = st.form_submit_button("Ingresar", type="primary", use_container_width=True)
-        
-        if btn_login:
-            match = df_usuarios[(df_usuarios['Usuario'] == user_input) & (df_usuarios['Clave'].astype(str) == pass_input)]
-            if not match.empty:
-                st.session_state["usuario_logueado"] = user_input
-                st.session_state["rol_usuario"] = match.iloc[0]['Rol']
-                st.session_state["nombre_usuario"] = match.iloc[0]['Nombre']
-                st.toast(f"Bienvenido {match.iloc[0]['Nombre']}", icon="👋")
-                st.rerun()
-            else:
-                st.error("⚠️ Usuario o contraseña incorrectos.")
-    st.stop() # Detiene la ejecución para no mostrar nada si no hay sesión
+
+    if btn_login:
+        match = df_usuarios[(df_usuarios['Usuario'] == user_input) & (df_usuarios['Clave'].astype(str) == pass_input)]
+        if not match.empty:
+            st.session_state["usuario_logueado"] = user_input
+            st.session_state["rol_usuario"] = match.iloc[0]['Rol']
+            st.session_state["nombre_usuario"] = match.iloc[0]['Nombre']
+            
+            # Guardar el usuario en la URL para que persista la sesión al refrescar
+            st.query_params["usr"] = user_input
+            st.toast(f"Bienvenido {match.iloc[0]['Nombre']}", icon="👋")
+            st.rerun()
+        else:
+            st.error("⚠️ Usuario o contraseña incorrectos.")
+    st.stop()
+
+# Si hace clic en "Cerrar Sesión", limpiar también los parámetros de la URL
 
 # ---------------------------------------------------------
 # BARRA LATERAL CON INFORMACIÓN DEL USUARIO Y ROLES
