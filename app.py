@@ -690,7 +690,7 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
 
     # 2. Métricas y Balance en Pantalla
     df_av_pendientes = df_avances_m[(df_avances_m['Motorizado'] == mot_corte) & (df_avances_m['Estado'] == 'Pendiente')]
-    total_ganancia_moto = ingreso_chofer
+    total_ganancia_moto = df_sorted['Monto_Motorizado'].sum() if not df_sorted.empty else 0.0
     total_avances_moto = df_av_pendientes['Monto'].sum() if not df_av_pendientes.empty else 0.0
     balance_neto_moto = total_ganancia_moto - total_avances_moto
 
