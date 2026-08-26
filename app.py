@@ -18,10 +18,17 @@ hide_streamlit_style = """
     [data-testid="stToolbar"] {display: none !important;}
     [data-testid="stDecoration"] {display: none !important;}
     button[title="View source"] {display: none !important;}
-    /* Mantiene visible el botón > para abrir la barra lateral en celulares */
+    
+    /* Mantiene la cabecera visible para desplegar la barra lateral */
+    header {
+        visibility: visible !important;
+        background: transparent !important;
+    }
+    /* Fuerza el color blanco del botón de la flecha */
     [data-testid="stSidebarCollapseButton"] {
         display: block !important;
         visibility: visible !important;
+        color: #FFFFFF !important;
     }
     </style>
 """
