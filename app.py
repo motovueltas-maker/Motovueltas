@@ -372,7 +372,7 @@ elif opcion_menu == "✅ Validar Precios":
 
         if not df_editables.empty:
             lista_opciones_edit = [
-                f"ID #{r['ID']} - {r['Fecha'][:10]} | 🛵 {r['Motorizado']} | 👤 {r['Cliente']} (${r['Precio_Cliente']:.2f})" 
+                f"ID #{r['ID']} - {pd.to_datetime(str(r['Fecha'])[:10]).strftime('%d/%m/%y')} | 🛵 {r['Motorizado']} | 👤 {r['Cliente']} (${r['Precio_Cliente']:.2f})" 
                 for _, r in df_editables.sort_values(by='ID', ascending=False).iterrows()
             ]
             
