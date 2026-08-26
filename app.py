@@ -675,9 +675,9 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
             for fecha_g, grupo in df_sorted.groupby(df_sorted['Fecha_dt'].dt.strftime('%d/%m'), sort=False):
                 msj_wa += f"\n*Fecha {fecha_g}*\n"
                 for _, r in grupo.iterrows():
-                    msj_wa += f"• {r['Cliente']}: {r['Origen']} -> {r['Destino']} (${r['Monto_Motorizado']:.2f})\n"
-            
-            msj_wa += f"\n---\nSubtotal Vueltas: ${total_ganancia_moto:.2f}\n"
+                    msj_wa += f"• {r['Origen']} -> {r['Destino']}: ${r['Precio_Cliente']:.2f}\n"
+
+            msj_wa += f"\n---\nSubtotal Vueltas (Ganancia): ${total_ganancia_moto:.2f}\n"
             if total_avances_moto > 0:
                 msj_wa += f"Avances / Adelantos: -${total_avances_moto:.2f}\n"
             msj_wa += f"*NETO A PAGAR: ${balance_neto_moto:.2f}*"
