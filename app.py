@@ -576,81 +576,11 @@ elif opcion_menu == "💵 Corte Clientes":
                     st.warning("⚠️ Sin número registrado en Clientes para envío directo.")
 
 # ---------------------------------------------------------
-# TAB 4: LIQUIDACIÓN MOTORIZADOS (ENVÍO Y RESET SEPARADOS)
+# TAB 4: LIQUIDACIÓN Y CORTE DE MOTORIZADOS
 # ---------------------------------------------------------
 elif opcion_menu == "🏍️ Liquidación Motorizados":
     st.subheader("Liquidación y Resumen de Motorizados")
 
-    col_m1, col_m2, col_m3 = st.columns(3)
-    with col_m1:
-        lista_motos_liq = df_motorizados['Nombre'].tolist() if not df_motorizados.empty else []
-        mot_corte = st.selectbox("Seleccionar Motorizado", lista_motos_liq, key="liq_mot_sel")
-    with col_m2:
-        f_liq_ini = st.date_input("Fecha Desde", value=None, format="DD/MM/YYYY", key="liq_f_ini")
-    with col_m3:
-        f_liq_fin = st.date_input("Fecha Hasta", value=None, format="DD/MM/YYYY", key="liq_f_fin")
-
-    # Asegurar columna de estado de liquidación sin borrar nada de la base de datos
-    if 'Estado_Liquidacion' not in df_servicios.columns:
-        df_servicios['Estado_Liquidacion'] = 'Pendiente'
-
-    # Filtrar solo vueltas validadas PENDIENTES DE LIQUIDAR AL CHOFER
-    df_m = df_servicios[
-        (df_servicios['Motorizado'] == mot_corte) & 
-        (df_servicios['Estado_Validacion'] == 'Validado') & 
-        (df_servicios['Estado_Liquidacion'] != 'Liquidado')
-    ].copy()
-    
-    if not df_m.empty:
-        df_m['Fecha_dt'] = pd.to_datetime(df_m['Fecha'].astype(str).str[:10], errors='coerce')
-        if f_liq_ini is not None:
-            df_m = df_m[df_m['Fecha_dt'] >= pd.to_datetime(f_liq_ini)]
-        if f_liq_fin is not None:
-            df_m = df_m[df_m['Fecha_dt'] <= pd.to_datetime(f_liq_fin)]
-
-    if not df_m.empty:
-        df_sorted = df_m.sort_values(by='Fecha_dt')
-        
-        # Agrupar por DÍA y MES (DD/MM)
-        dias_agrupados = df_sorted.groupby(df_sorted['Fecha_dt'].dt.strftime('%d/%m'), sort=False)
-        
-        msj_wa = f"🛵 *LIQUIDACIÓN DE MOTOVUELTAS*\n"
-        msj_wa += f"Chofer: *{mot_corte}*\n"
-        msj_wa += "-----------------------------------\n\n"
-        
-        total_servicios_cliente = 0.0
-        
-        for fecha_corta, grupo in dias_agrupados:
-            msj_wa += f"📅 *{fecha_corta}*\n"
-            for _, r in grupo.iterrows():
-                precio_c = float(r['Precio_Cliente'])
-                total_servicios_cliente += precio_c
-                msj_wa += f"• {r['Origen']} -> {r['Destino']}: ${precio_c:.2f}\n"
-            msj_wa += "\n"
-            
-        com_base = df_motorizados.loc[df_motorizados['Nombre'] == mot_corte, 'Comision_Base'].values
-        pct_comision = float(com_base[0]) if len(com_base) > 0 else 66.67
-        
-        ingreso_chofer = round(total_servicios_cliente * (pct_comision / 100.0), 2)
-        
-        if 'df_avances' in globals() and not df_avances.empty:
-            avances_mot = df_avances[(df_avances['Motorizado'] == mot_corte) & (df_avances['Estado'] == 'Pendiente')]
-            total_avances_periodo = float(avances_mot['Monto'].sum()) if not avances_mot.empty else 0.0
-        else:
-            total_avances_periodo = 0.0
-
-        neto_final = round(ingreso_chofer - total_avances_periodo, 2)
-        
-        msj_wa += "-----------------------------------\n"
-        msj_wa += f"📊 Total Servicios: *${total_servicios_cliente:.2f}*\n"
-        msj_wa += f"💰 Tu Comisión ({pct_comision:.0f}%): *${ingreso_chofer:.2f}*\n"
-        if total_avances_periodo > 0:
-            msj_wa += f"🔻 Avances / Adelantos: *-${total_avances_periodo:.2f}*\n"
-        msj_wa += f"✅ *NETO A PAGAR: ${neto_final:.2f}*"
-
-    # ---------------------------------------------------------
-    # GESTIÓN DE AVANCES Y BALANCE DE MOTORIZADO
-    # ---------------------------------------------------------
     FILE_AVANCES_MOTO = "avances_motorizados.csv"
     if os.path.exists(FILE_AVANCES_MOTO):
         df_avances_m = pd.read_csv(FILE_AVANCES_MOTO)
@@ -658,99 +588,126 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
         df_avances_m = pd.DataFrame(columns=['ID', 'Fecha', 'Motorizado', 'Monto', 'Concepto', 'Estado'])
         df_avances_m.to_csv(FILE_AVANCES_MOTO, index=False)
 
-    # 1. Recuadro para registrar un nuevo Avance / Adelanto
-    with st.expander(f"➕ Registrar Avance / Adelanto a {mot_corte}", expanded=False):
-        with st.form("form_avance_motorizado", clear_on_submit=True):
-            col_av1, col_av2, col_av3 = st.columns(3)
-            with col_av1:
-                f_avance_m = st.date_input("Fecha del Avance", key="f_av_moto", format="DD/MM/YYYY")
-            with col_av2:
-                monto_av_m = st.number_input("Monto Avance ($)", min_value=0.0, step=0.50, key="m_av_moto")
-            with col_av3:
-                concepto_av_m = st.text_input("Concepto / Motivo", placeholder="Ej. Gasolina, Adelanto", key="c_av_moto")
-            
-            btn_guardar_av = st.form_submit_button("💾 Guardar Avance", type="primary", use_container_width=True)
-            if btn_guardar_av:
-                if monto_av_m > 0:
-                    nuevo_id_av = len(df_avances_m) + 1
-                    nuevo_reg_av = {
-                        'ID': nuevo_id_av,
-                        'Fecha': f_avance_m.strftime("%d/%m/%Y"),
-                        'Motorizado': mot_corte,
-                        'Monto': float(monto_av_m),
-                        'Concepto': concepto_av_m.strip() if concepto_av_m.strip() else "Avance a cuenta",
-                        'Estado': 'Pendiente'
-                    }
-                    df_avances_m = pd.concat([df_avances_m, pd.DataFrame([nuevo_reg_av])], ignore_index=True)
-                    df_avances_m.to_csv(FILE_AVANCES_MOTO, index=False)
-                    st.toast(f"✅ Avance de ${monto_av_m:.2f} registrado a {mot_corte}", icon="💵")
-                    st.rerun()
-                else:
-                    st.error("⚠️ El monto del avance debe ser mayor a $0.")
+    validados_mot = df_servicios[(df_servicios['Estado_Validacion'] == 'Validado') & (df_servicios['Estado_Motorizado'] == 'Pendiente')]
 
-    # 2. Métricas y Balance en Pantalla
-    df_av_pendientes = df_avances_m[(df_avances_m['Motorizado'] == mot_corte) & (df_avances_m['Estado'] == 'Pendiente')]
-    total_ganancia_moto = df_sorted['Monto_Motorizado'].sum() if not df_sorted.empty else 0.0
-    total_avances_moto = df_av_pendientes['Monto'].sum() if not df_av_pendientes.empty else 0.0
-    balance_neto_moto = total_ganancia_moto - total_avances_moto
+    if not validados_mot.empty:
+        # 1. Filtros de Búsqueda
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1:
+            motos_disponibles = sorted(validados_mot['Motorizado'].unique().tolist())
+            mot_corte = st.selectbox("Seleccionar Motorizado", motos_disponibles, key="sel_mot_tab4")
+        with col_m2:
+            f_mot_ini = st.date_input("Fecha Desde", value=None, format="DD/MM/YYYY", key="mot_f_ini")
+        with col_m3:
+            f_mot_fin = st.date_input("Fecha Hasta", value=None, format="DD/MM/YYYY", key="mot_f_fin")
 
-    st.write("#### 📊 Balance de Cuenta")
-    b_col1, b_col2, b_col3 = st.columns(3)
-    b_col1.metric("Total Vueltas (Ganancia)", f"${total_ganancia_moto:.2f}")
-    b_col2.metric("Total Avances / Adelantos", f"-${total_avances_moto:.2f}")
-    b_col3.metric("Neto a Pagar", f"${balance_neto_moto:.2f}")
+        # Filtrar DataFrame de vueltas por motorizado y rango de fechas
+        df_m = validados_mot[validados_mot['Motorizado'] == mot_corte].copy()
+        df_m['Fecha_dt'] = pd.to_datetime(df_m['Fecha'].astype(str).str[:10], errors='coerce')
 
-    if not df_av_pendientes.empty:
-        st.write("##### 💸 Avances Pendientes por Descontar")
-        st.dataframe(df_av_pendientes[['Fecha', 'Monto', 'Concepto']], use_container_width=True, hide_index=True)
-        
-        # Preparar enlace de WhatsApp
-        row_moto = df_motorizados[df_motorizados['Nombre'] == mot_corte]
-        num_tlf = ""
-        if not row_moto.empty and 'Telefono' in row_moto.columns:
-            num_tlf = str(row_moto['Telefono'].values[0]).replace("+", "").replace(" ", "").replace("-", "").strip()
-            if num_tlf.startswith("0"):
-                num_tlf = "58" + num_tlf[1:]
+        if f_mot_ini is not None:
+            df_m = df_m[df_m['Fecha_dt'] >= pd.to_datetime(f_mot_ini)]
+        if f_mot_fin is not None:
+            df_m = df_m[df_m['Fecha_dt'] <= pd.to_datetime(f_mot_fin)]
 
-        msj_encoded = urllib.parse.quote(msj_wa)
-        link_wa = f"https://wa.me/{num_tlf}?text={msj_encoded}"
+        df_sorted = df_m.sort_values(by='Fecha_dt')
 
-        col_b1, col_b2 = st.columns(2)
-        with col_b1:
-            # Botón 1: Abre WhatsApp directamente sin bloqueos de pop-up
-            st.link_button("📲 1. Enviar Resumen por WhatsApp", link_wa, type="primary", use_container_width=True)
-        
-        with col_b2:
-            # Botón 2: Procesa el reset y limpia la vista a $0.00
-            if st.button("🔒 2. Confirmar Pago y Resetear Conteo", type="secondary", use_container_width=True):
-                ids_a_cerrar = df_sorted['ID'].tolist()
-                df_servicios.loc[df_servicios['ID'].isin(ids_a_cerrar), 'Estado_Liquidacion'] = 'Liquidado'
-                df_servicios.to_csv(FILE_SERVICIOS, index=False)
+        # 2. Registrar Adelanto / Avance
+        with st.expander(f"➕ Registrar Avance / Adelanto a {mot_corte}", expanded=False):
+            with st.form("form_avance_motorizado", clear_on_submit=True):
+                col_av1, col_av2, col_av3 = st.columns(3)
+                with col_av1:
+                    f_avance_m = st.date_input("Fecha del Avance", key="f_av_moto", format="DD/MM/YYYY")
+                with col_av2:
+                    monto_av_m = st.number_input("Monto Avance ($)", min_value=0.0, step=0.50, key="m_av_moto")
+                with col_av3:
+                    concepto_av_m = st.text_input("Concepto / Motivo", placeholder="Ej. Gasolina, Adelanto", key="c_av_moto")
+                
+                btn_guardar_av = st.form_submit_button("💾 Guardar Avance", type="primary", use_container_width=True)
+                if btn_guardar_av:
+                    if monto_av_m > 0:
+                        nuevo_id_av = len(df_avances_m) + 1
+                        nuevo_reg_av = {
+                            'ID': nuevo_id_av,
+                            'Fecha': f_avance_m.strftime("%d/%m/%Y"),
+                            'Motorizado': mot_corte,
+                            'Monto': float(monto_av_m),
+                            'Concepto': concepto_av_m.strip() if concepto_av_m.strip() else "Avance a cuenta",
+                            'Estado': 'Pendiente'
+                        }
+                        df_avances_m = pd.concat([df_avances_m, pd.DataFrame([nuevo_reg_av])], ignore_index=True)
+                        df_avances_m.to_csv(FILE_AVANCES_MOTO, index=False)
+                        st.toast(f"✅ Avance de ${monto_av_m:.2f} registrado a {mot_corte}", icon="💵")
+                        st.rerun()
+                    else:
+                        st.error("⚠️ El monto del avance debe ser mayor a $0.")
 
-                if 'df_avances' in globals() and not df_avances.empty:
-                    df_avances.loc[
-                        (df_avances['Motorizado'] == mot_corte) & (df_avances['Estado'] == 'Pendiente'), 
-                        'Estado'
-                    ] = 'Pagado'
-                    df_avances.to_csv(FILE_AVANCES, index=False)
+        # 3. Balance de Cuenta a la vista
+        df_av_pendientes = df_avances_m[(df_avances_m['Motorizado'] == mot_corte) & (df_avances_m['Estado'] == 'Pendiente')]
+        total_ganancia_moto = df_sorted['Monto_Motorizado'].sum() if not df_sorted.empty else 0.0
+        total_avances_moto = df_av_pendientes['Monto'].sum() if not df_av_pendientes.empty else 0.0
+        balance_neto_moto = total_ganancia_moto - total_avances_moto
 
-                st.toast(f"✅ Conteo de {mot_corte} reiniciado a $0.00.", icon="🎉")
-                st.rerun()
+        st.write("#### 📊 Balance de Cuenta")
+        b_col1, b_col2, b_col3 = st.columns(3)
+        b_col1.metric("Total Vueltas (Ganancia)", f"${total_ganancia_moto:.2f}")
+        b_col2.metric("Total Avances / Adelantos", f"-${total_avances_moto:.2f}")
+        b_col3.metric("Neto a Pagar", f"${balance_neto_moto:.2f}")
 
+        if not df_av_pendientes.empty:
+            st.write("##### 💸 Avances Pendientes por Descontar")
+            st.dataframe(df_av_pendientes[['Fecha', 'Monto', 'Concepto']], use_container_width=True, hide_index=True)
+
+        # 4. Tabla de Vueltas Realizadas
         st.markdown("---")
         st.write("### 📄 Vista previa de servicios pendientes por liquidar")
-        
         if not df_sorted.empty:
             df_display = df_sorted.copy()
-            df_display['Fecha'] = df_display['Fecha_dt'].dt.strftime('%d/%m')
+            df_display['Fecha_Corta'] = df_display['Fecha_dt'].dt.strftime('%d/%m')
             st.dataframe(
-                df_display[['Fecha', 'Cliente', 'Origen', 'Destino', 'Precio_Cliente']], 
+                df_display[['Fecha_Corta', 'Cliente', 'Origen', 'Destino', 'Precio_Cliente']].rename(columns={'Fecha_Corta': 'Fecha', 'Precio_Cliente': 'Precio ($)'}), 
                 use_container_width=True, 
                 hide_index=True
             )
+
+            # 5. Generar Mensaje de WhatsApp y Acciones
+            msj_wa = f"*MOTOVUELTAS - Resumen de Liquidación*\nMotorizado: *{mot_corte}*\n---\n"
+            for fecha_g, grupo in df_sorted.groupby(df_sorted['Fecha_dt'].dt.strftime('%d/%m'), sort=False):
+                msj_wa += f"\n*Fecha {fecha_g}*\n"
+                for _, r in grupo.iterrows():
+                    msj_wa += f"• {r['Cliente']}: {r['Origen']} -> {r['Destino']} (${r['Monto_Motorizado']:.2f})\n"
+            
+            msj_wa += f"\n---\nSubtotal Vueltas: ${total_ganancia_moto:.2f}\n"
+            if total_avances_moto > 0:
+                msj_wa += f"Avances / Adelantos: -${total_avances_moto:.2f}\n"
+            msj_wa += f"*NETO A PAGAR: ${balance_neto_moto:.2f}*"
+
+            st.text_area("Mensaje de WhatsApp preparado:", msj_wa, height=150)
+            
+            btn_col1, btn_col2 = st.columns(2)
+            with btn_col1:
+                msj_encoded = urllib.parse.quote(msj_wa)
+                st.link_button("📲 Enviar Resumen por WhatsApp", f"https://wa.me/?text={msj_encoded}", type="primary", use_container_width=True)
+            
+            with btn_col2:
+                if st.button("🚀 Liquidar y Resetear Motorizado", type="secondary", use_container_width=True):
+                    # Marcar servicios como pagados
+                    ids_liquidar = df_sorted['ID'].tolist()
+                    df_servicios.loc[df_servicios['ID'].isin(ids_liquidar), 'Estado_Motorizado'] = 'Liquidado'
+                    df_servicios.to_csv(FILE_SERVICIOS, index=False)
+                    
+                    # Marcar avances como descontados
+                    if not df_av_pendientes.empty:
+                        df_avances_m.loc[(df_avances_m['Motorizado'] == mot_corte) & (df_avances_m['Estado'] == 'Pendiente'), 'Estado'] = 'Liquidado'
+                        df_avances_m.to_csv(FILE_AVANCES_MOTO, index=False)
+                        
+                    st.success(f"✅ ¡Se ha liquidado a {mot_corte} exitosamente! Las vueltas y avances han sido reseteados.")
+                    st.rerun()
         else:
             st.info(f"No hay vueltas pendientes por liquidar para {mot_corte} en el rango seleccionado.")
-        
+    else:
+        st.info("No hay servicios validados pendientes por liquidar para los motorizados.")        
+
 # ---------------------------------------------------------
 # TAB 5: DIRECTORIO DE CLIENTES (FORMULARIO CON RESET NATIVO)
 # ---------------------------------------------------------
