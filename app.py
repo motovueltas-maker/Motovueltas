@@ -169,73 +169,60 @@ if st.session_state["usuario_logueado"] is None:
 # Si hace clic en "Cerrar Sesión", limpiar también los parámetros de la URL
 
 # ---------------------------------------------------------
-# BARRA LATERAL CON INFORMACIÓN DEL USUARIO Y ROLES
+# NAVEGACIÓN CORPORATIVA EN PANTALLA PRINCIPAL
 # ---------------------------------------------------------
-st.sidebar.markdown(f"👤 **{st.session_state['nombre_usuario']}**  \n*Rol: {st.session_state['rol_usuario']}*")
-if st.sidebar.button("Cerrar Sesión", type="secondary"):
-    st.session_state["usuario_logueado"] = None
-    st.session_state["rol_usuario"] = None
-    st.session_state["nombre_usuario"] = None
-    st.query_params.clear()  # Borra la sesión retenida en la URL
-    st.rerun()
+col_usr1, col_usr2 = st.columns([2, 1])
+with col_usr1:
+    st.markdown(f"**Usuario:** {st.session_state['nombre_usuario']} | **Rol:** {st.session_state['rol_usuario']}")
+with col_usr2:
+    if st.button("Cerrar Sesión", type="secondary", use_container_width=True):
+        st.session_state["usuario_logueado"] = None
+        st.session_state["rol_usuario"] = None
+        st.session_state["nombre_usuario"] = None
+        st.query_params.clear()
+        st.rerun()
 
-st.sidebar.write("---")
-
-# Definir opciones del menú según el Rol del usuario
+# Menú profesional sin emojis
 if st.session_state["rol_usuario"] == "Chofer":
-    opciones_disponibles = ["🛵 Registrar Vuelta"]
+    opciones_disponibles = ["Registrar Vuelta"]
 else:
-    # Opciones completas para Administrador
     opciones_disponibles = [
-        "🛵 Registrar Vuelta",
-        "✅ Validar Precios",
-        "💵 Corte Clientes",
-        "🏍️ Liquidación Motorizados",
-        "👥 Directorio Clientes",
-        "⚙️ Perfiles Motorizados"
+        "Registrar Vuelta",
+        "Validar Precios",
+        "Corte Clientes",
+        "Liquidación Motorizados",
+        "Directorio Clientes",
+        "Perfiles Motorizados"
     ]
 
-opcion_menu = st.sidebar.radio("📌 Menú de Navegación", opciones_disponibles)
+# Desplegable superior perfecto para teléfonos
+opcion_menu = st.selectbox("Módulo:", opciones_disponibles)
 
-# ---------------------------------------------------------
-# RESPALDO COMPLETO EN ARCHIVO ZIP
-# ---------------------------------------------------------
+# Módulo de Respaldo para Administrador
 if st.session_state["rol_usuario"] == "Admin":
-    st.sidebar.write("---")
-    st.sidebar.subheader("📦 Respaldo del Sistema")
-    
-    # Crear el buffer en memoria para la descarga
-    zip_buffer = io.BytesIO()
-    
-    # Archivos a incluir en la copia de seguridad
-    archivos_respaldo = [
-        "app.py",
-        "clientes.csv",
-        "motorizados.csv",
-        "servicios.csv",
-        "usuarios.csv",
-        "abonos_clientes.csv",
-        "logo_motovueltas.png"
-    ]
-    
-    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        for archivo in archivos_respaldo:
-            if os.path.exists(archivo):
-                zip_file.write(archivo, arcname=archivo)
-                
-    zip_buffer.seek(0)
-    
-    # Nombre dinámico con la fecha actual (ej: Respaldo_Motovueltas_2026-08-26.zip)
-    fecha_hoy = datetime.now().strftime("%Y-%m-%d")
-    
-    st.sidebar.download_button(
-        label="⬇️ Descargar Backup (.zip)",
-        data=zip_buffer,
-        file_name=f"Respaldo_Motovueltas_{fecha_hoy}.zip",
-        mime="application/zip",
-        use_container_width=True,
-        type="primary"
-    )
+    with st.expander("Respaldo del Sistema"):
+        zip_buffer = io.BytesIO()
+        archivos_respaldo = [
+            "app.py", "clientes.csv", "motorizados.csv", 
+            "servicios.csv", "usuarios.csv", "abonos_clientes.csv", "logo_motovueltas.png"
+        ]
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for archivo in archivos_respaldo:
+                if os.path.exists(archivo):
+                    zip_file.write(archivo, arcname=archivo)
+        zip_buffer.seek(0)
+        fecha_hoy = datetime.now().strftime("%Y-%m-%d")
+        
+        st.download_button(
+            label="Descargar Backup (.zip)",
+            data=zip_buffer,
+            file_name=f"Respaldo_Motovueltas_{fecha_hoy}.zip",
+            mime="application/zip",
+            use_container_width=True,
+            type="primary"
+        )
+
+st.write("---")
 
 # ---------------------------------------------------------
 # TAB 1: REGISTRAR VUELTA (ADAPTATIVO SEGÚN ROL)
