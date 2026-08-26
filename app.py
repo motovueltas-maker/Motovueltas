@@ -79,7 +79,7 @@ def cargar_datos():
 
 df_clientes, df_motorizados, df_servicios, df_usuarios = cargar_datos()
 
-st.title("MotoVueltas - Sistema de Gestión")
+st.title("MotoVueltas Administrativo")
 
 # ---------------------------------------------------------
 # ESTILOS VISUALES Y COLORES (Naranja, Negro y Blanco)
@@ -129,10 +129,12 @@ if "usuario_logueado" not in st.session_state:
 
 # Pantalla de Inicio de Sesión limpia con Logo
 if st.session_state["usuario_logueado"] is None:
-    col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
+    col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
     with col_l2:
         if os.path.exists("logo_motovueltas.png"):
+            st.markdown("<div style='display: flex; justify-content: center;'>", unsafe_allow_html=True)
             st.image("logo_motovueltas.png", width=150)
+            st.markdown("</div>", unsafe_allow_html=True)
     
     st.markdown("<h2 style='text-align: center; color: #FFFFFF;'>Iniciar Sesión</h2>", unsafe_allow_html=True)
     with st.form("form_login"):
