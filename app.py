@@ -737,7 +737,7 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
                 st.toast(f"✅ Conteo de {mot_corte} reiniciado a $0.00.", icon="🎉")
                 st.rerun()
 
-       st.markdown("---")
+        st.markdown("---")
         st.write("### 📄 Vista previa de servicios pendientes por liquidar")
         
         if not df_sorted.empty:
