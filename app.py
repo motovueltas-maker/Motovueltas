@@ -737,14 +737,19 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
                 st.toast(f"✅ Conteo de {mot_corte} reiniciado a $0.00.", icon="🎉")
                 st.rerun()
 
-        st.markdown("---")
+       st.markdown("---")
         st.write("### 📄 Vista previa de servicios pendientes por liquidar")
-        # Formatear la fecha a DD/MM para la vista previa
-        df_display = df_sorted.copy()
-        df_display['Fecha'] = df_display['Fecha_dt'].dt.strftime('%d/%m')
-        st.dataframe(df_display[['Fecha', 'Cliente', 'Origen', 'Destino', 'Precio_Cliente']], use_container_width=True, hide_index=True)
-    else:
-        st.info(f"No hay vueltas pendientes por liquidar para **{mot_corte}**.")
+        
+        if not df_sorted.empty:
+            df_display = df_sorted.copy()
+            df_display['Fecha'] = df_display['Fecha_dt'].dt.strftime('%d/%m')
+            st.dataframe(
+                df_display[['Fecha', 'Cliente', 'Origen', 'Destino', 'Precio_Cliente']], 
+                use_container_width=True, 
+                hide_index=True
+            )
+        else:
+            st.info(f"No hay vueltas pendientes por liquidar para {mot_corte} en el rango seleccionado.")
         
 # ---------------------------------------------------------
 # TAB 5: DIRECTORIO DE CLIENTES (FORMULARIO CON RESET NATIVO)
