@@ -647,6 +647,62 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
         if total_avances_periodo > 0:
             msj_wa += f"🔻 Avances / Adelantos: *-${total_avances_periodo:.2f}*\n"
         msj_wa += f"✅ *NETO A PAGAR: ${neto_final:.2f}*"
+
+    # ---------------------------------------------------------
+    # GESTIÓN DE AVANCES Y BALANCE DE MOTORIZADO
+    # ---------------------------------------------------------
+    FILE_AVANCES_MOTO = "avances_motorizados.csv"
+    if os.path.exists(FILE_AVANCES_MOTO):
+        df_avances_m = pd.read_csv(FILE_AVANCES_MOTO)
+    else:
+        df_avances_m = pd.DataFrame(columns=['ID', 'Fecha', 'Motorizado', 'Monto', 'Concepto', 'Estado'])
+        df_avances_m.to_csv(FILE_AVANCES_MOTO, index=False)
+
+    # 1. Recuadro para registrar un nuevo Avance / Adelanto
+    with st.expander(f"➕ Registrar Avance / Adelanto a {mot_corte}", expanded=False):
+        with st.form("form_avance_motorizado", clear_on_submit=True):
+            col_av1, col_av2, col_av3 = st.columns(3)
+            with col_av1:
+                f_avance_m = st.date_input("Fecha del Avance", key="f_av_moto", format="DD/MM/YYYY")
+            with col_av2:
+                monto_av_m = st.number_input("Monto Avance ($)", min_value=0.0, step=0.50, key="m_av_moto")
+            with col_av3:
+                concepto_av_m = st.text_input("Concepto / Motivo", placeholder="Ej. Gasolina, Adelanto", key="c_av_moto")
+            
+            btn_guardar_av = st.form_submit_button("💾 Guardar Avance", type="primary", use_container_width=True)
+            if btn_guardar_av:
+                if monto_av_m > 0:
+                    nuevo_id_av = len(df_avances_m) + 1
+                    nuevo_reg_av = {
+                        'ID': nuevo_id_av,
+                        'Fecha': f_avance_m.strftime("%d/%m/%Y"),
+                        'Motorizado': mot_corte,
+                        'Monto': float(monto_av_m),
+                        'Concepto': concepto_av_m.strip() if concepto_av_m.strip() else "Avance a cuenta",
+                        'Estado': 'Pendiente'
+                    }
+                    df_avances_m = pd.concat([df_avances_m, pd.DataFrame([nuevo_reg_av])], ignore_index=True)
+                    df_avances_m.to_csv(FILE_AVANCES_MOTO, index=False)
+                    st.toast(f"✅ Avance de ${monto_av_m:.2f} registrado a {mot_corte}", icon="💵")
+                    st.rerun()
+                else:
+                    st.error("⚠️ El monto del avance debe ser mayor a $0.")
+
+    # 2. Métricas y Balance en Pantalla
+    df_av_pendientes = df_avances_m[(df_avances_m['Motorizado'] == mot_corte) & (df_avances_m['Estado'] == 'Pendiente')]
+    total_ganancia_moto = ingreso_chofer
+    total_avances_moto = df_av_pendientes['Monto'].sum() if not df_av_pendientes.empty else 0.0
+    balance_neto_moto = total_ganancia_moto - total_avances_moto
+
+    st.write("#### 📊 Balance de Cuenta")
+    b_col1, b_col2, b_col3 = st.columns(3)
+    b_col1.metric("Total Vueltas (Ganancia)", f"${total_ganancia_moto:.2f}")
+    b_col2.metric("Total Avances / Adelantos", f"-${total_avances_moto:.2f}")
+    b_col3.metric("Neto a Pagar", f"${balance_neto_moto:.2f}")
+
+    if not df_av_pendientes.empty:
+        st.write("##### 💸 Avances Pendientes por Descontar")
+        st.dataframe(df_av_pendientes[['Fecha', 'Monto', 'Concepto']], use_container_width=True, hide_index=True)
         
         # Preparar enlace de WhatsApp
         row_moto = df_motorizados[df_motorizados['Nombre'] == mot_corte]
