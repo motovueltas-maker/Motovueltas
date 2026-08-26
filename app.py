@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import os
+import zipfile
+import io
 from datetime import datetime
 import urllib.parse  # <--- Agrega esta línea aquí
 
@@ -185,6 +187,46 @@ else:
     ]
 
 opcion_menu = st.sidebar.radio("📌 Menú de Navegación", opciones_disponibles)
+
+# ---------------------------------------------------------
+# RESPALDO COMPLETO EN ARCHIVO ZIP
+# ---------------------------------------------------------
+if st.session_state["rol_usuario"] == "Admin":
+    st.sidebar.write("---")
+    st.sidebar.subheader("📦 Respaldo del Sistema")
+    
+    # Crear el buffer en memoria para la descarga
+    zip_buffer = io.BytesIO()
+    
+    # Archivos a incluir en la copia de seguridad
+    archivos_respaldo = [
+        "app.py",
+        "clientes.csv",
+        "motorizados.csv",
+        "servicios.csv",
+        "usuarios.csv",
+        "abonos_clientes.csv",
+        "logo_motovueltas.png"
+    ]
+    
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for archivo in archivos_respaldo:
+            if os.path.exists(archivo):
+                zip_file.write(archivo, arcname=archivo)
+                
+    zip_buffer.seek(0)
+    
+    # Nombre dinámico con la fecha actual (ej: Respaldo_Motovueltas_2026-08-26.zip)
+    fecha_hoy = datetime.now().strftime("%Y-%m-%d")
+    
+    st.sidebar.download_button(
+        label="⬇️ Descargar Backup (.zip)",
+        data=zip_buffer,
+        file_name=f"Respaldo_Motovueltas_{fecha_hoy}.zip",
+        mime="application/zip",
+        use_container_width=True,
+        type="primary"
+    )
 
 # ---------------------------------------------------------
 # TAB 1: REGISTRAR VUELTA (ADAPTATIVO SEGÚN ROL)
