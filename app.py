@@ -227,7 +227,7 @@ st.write("---")
 # ---------------------------------------------------------
 # TAB 1: REGISTRAR VUELTA (ADAPTATIVO SEGÚN ROL)
 # ---------------------------------------------------------
-if opcion_menu == "🛵 Registrar Vuelta":
+if opcion_menu == "Registrar Vuelta":
     es_admin = (st.session_state.get("rol_usuario") == "Admin")
     nombre_sesion = st.session_state.get("nombre_usuario", "")
 
@@ -323,7 +323,7 @@ if opcion_menu == "🛵 Registrar Vuelta":
 # ---------------------------------------------------------
 # TAB 2: VALIDAR PRECIOS Y EDITAR VUELTAS (COMPLETO)
 # ---------------------------------------------------------
-elif opcion_menu == "✅ Validar Precios":
+elif opcion_menu == "Validar Precios":
     st.subheader("Validación y Corrección de Vueltas")
 
     # 1. VUELTAS PENDIENTES POR VALIDAR (TODAS EN UNA MISMA TABLA)
@@ -509,7 +509,7 @@ elif opcion_menu == "✅ Validar Precios":
 # ---------------------------------------------------------
 # TAB 3: CORTE CLIENTES, ABONOS Y ENVÍO DIRECTO A WHATSAPP
 # ---------------------------------------------------------
-elif opcion_menu == "💵 Corte Clientes":
+elif opcion_menu == "Corte Clientes":
     st.subheader("Corte de Cuenta Clientes")
     
     FILE_ABONOS = "abonos_clientes.csv"
@@ -646,7 +646,7 @@ elif opcion_menu == "💵 Corte Clientes":
 # ---------------------------------------------------------
 # TAB 4: LIQUIDACIÓN Y CORTE DE MOTORIZADOS
 # ---------------------------------------------------------
-elif opcion_menu == "🏍️ Liquidación Motorizados":
+elif opcion_menu == "Liquidación Motorizados":
     st.subheader("Liquidación y Resumen de Motorizados")
 
     FILE_AVANCES_MOTO = "avances_motorizados.csv"
@@ -779,7 +779,7 @@ elif opcion_menu == "🏍️ Liquidación Motorizados":
 # ---------------------------------------------------------
 # TAB 5: DIRECTORIO DE CLIENTES (FORMULARIO CON RESET NATIVO)
 # ---------------------------------------------------------
-elif opcion_menu == "👥 Directorio Clientes":
+elif opcion_menu == "Directorio Clientes":
     st.subheader("Directorio de Clientes")
 
     # 1. AGREGAR NUEVO CLIENTE (FORMULARIO DE RESET AUTOMÁTICO)
@@ -864,7 +864,7 @@ elif opcion_menu == "👥 Directorio Clientes":
 # ---------------------------------------------------------
 # TAB 6: PERFILES DE MOTORIZADOS Y EDICIÓN
 # ---------------------------------------------------------
-elif opcion_menu == "⚙️ Perfiles Motorizados":
+elif opcion_menu == "Perfiles Motorizados":
     st.subheader("Gestión de Motorizados y Comisiones Base")
 
     # Asegurar que la columna Telefono exista en el DataFrame
