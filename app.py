@@ -353,9 +353,9 @@ elif opcion_menu == "✅ Validar Precios":
             cli_lista_filtro = ["Todos"] + (df_clientes['Nombre'].tolist() if not df_clientes.empty else [])
             filtro_cli = st.selectbox("Filtrar por Cliente", cli_lista_filtro, key="f_edit_cli")
         with f_col3:
-            filtro_f_ini = st.date_input("Desde Fecha", value=None, key="f_edit_ini")
+            filtro_f_ini = st.date_input("Desde Fecha", value=None, format="DD/MM/YYYY", key="f_edit_ini")
         with f_col4:
-            filtro_f_fin = st.date_input("Hasta Fecha", value=None, key="f_edit_fin")
+            filtro_f_fin = st.date_input("Hasta Fecha", value=None, format="DD/MM/YYYY", key="f_edit_fin")
 
         # Aplicar Filtros sobre el DataFrame
         df_editables = df_servicios.copy()
@@ -390,7 +390,7 @@ elif opcion_menu == "✅ Validar Precios":
                         f_edit_orig = datetime.strptime(str(row_edit['Fecha'])[:10], "%Y-%m-%d").date()
                     except:
                         f_edit_orig = datetime.now().date()
-                    edit_fecha = st.date_input("Fecha", value=f_edit_orig)
+                    edit_fecha = st.date_input("Fecha", value=f_edit_orig, format="DD/MM/YYYY")
                 with col_e2:
                     motos_list_ed = df_motorizados['Nombre'].tolist() if not df_motorizados.empty else [row_edit['Motorizado']]
                     idx_m = motos_list_ed.index(row_edit['Motorizado']) if row_edit['Motorizado'] in motos_list_ed else 0
