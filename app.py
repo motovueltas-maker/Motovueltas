@@ -132,7 +132,7 @@ if st.session_state["usuario_logueado"] is None:
     if os.path.exists("logo_motovueltas.png"):
         col_c1, col_c2, col_c3 = st.columns([1, 2, 1])
         with col_c2:
-            st.image("logo_motovueltas.png", width=150)
+            st.image("logo_motovueltas.png", width=130)
     
     st.markdown("<h2 style='text-align: center; color: #FFFFFF;'>Iniciar Sesión</h2>", unsafe_allow_html=True)
     with st.form("form_login"):
