@@ -79,12 +79,37 @@ def cargar_datos():
 
 df_clientes, df_motorizados, df_servicios, df_usuarios = cargar_datos()
 
-st.title("🛵 MotoVueltas - Sistema de Gestión")
+st.title("MotoVueltas - Sistema de Gestión")
+
+# ---------------------------------------------------------
+# ESTILOS VISUALES Y COLORES (Naranja, Negro y Blanco)
+# ---------------------------------------------------------
+st.markdown("""
+    <style>
+    /* Fondo principal */
+    .stApp {
+        background-color: #0F0F0F;
+        color: #FFFFFF;
+    }
+    /* Botones principales en Naranja Motovueltas */
+    div.stButton > button[kind="primary"] {
+        background-color: #FF5500 !important;
+        color: #FFFFFF !important;
+        border-radius: 8px;
+        border: none;
+        font-weight: bold;
+    }
+    /* Campos de texto oscuros */
+    div[data-baseweb="input"] input {
+        background-color: #1F1F1F !important;
+        color: #FFFFFF !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # CONTROL DE SESIÓN PERSISTENTE (MANTENER LOGIN AL RECARGAR)
 # ---------------------------------------------------------
-# 1. Recuperar sesión desde los parámetros de la URL si el usuario recarga la página
 query_params = st.query_params
 usr_url = query_params.get("usr", None)
 
@@ -102,9 +127,14 @@ if "usuario_logueado" not in st.session_state:
         st.session_state["rol_usuario"] = None
         st.session_state["nombre_usuario"] = None
 
-# Pantalla de Inicio de Sesión si no hay usuario activo
+# Pantalla de Inicio de Sesión limpia con Logo
 if st.session_state["usuario_logueado"] is None:
-    st.subheader("🔐 Iniciar Sesión")
+    col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
+    with col_l2:
+        if os.path.exists("logo_motovueltas.png"):
+            st.image("logo_motovueltas.png", use_container_width=True)
+    
+    st.markdown("<h2 style='text-align: center; color: #FFFFFF;'>Iniciar Sesión</h2>", unsafe_allow_html=True)
     with st.form("form_login"):
         user_input = st.text_input("Usuario (ej: esneyder, omar)").strip().lower()
         pass_input = st.text_input("Contraseña", type="password")
