@@ -279,23 +279,31 @@ if opcion_menu == "Registrar Vuelta":
     with col_top1:
         fecha_operativa = st.date_input("Fecha de la vuelta", key="fecha_carreras_fija", format="DD/MM/YYYY")
     
-    if es_admin:
-        with col_top2:
-            lista_motos = df_motorizados['Nombre'].tolist()
-            moto_sel = st.selectbox("Motorizado", lista_motos, key="moto_carreras_fija")
-        with col_top3:
+# Asegura nombres de columna estándar en motorizados
+if not df_motorizados.empty:
+    df_motorizados.columns = [c.strip() for c in df_motorizados.columns]
+
+if es_admin:
+    with col_top2:
+        lista_motos = df_motorizados['Nombre'].tolist() if 'Nombre' in df_motorizados.columns else []
+        moto_sel = st.selectbox("Motorizado", lista_motos, key="moto_carreras_fija") if lista_motos else None
+    with col_top3:
+        val_default = 66.67
+        if moto_sel and 'Comision_Base' in df_motorizados.columns:
             com_base_sug = df_motorizados.loc[df_motorizados['Nombre'] == moto_sel, 'Comision_Base'].values
-            val_default = float(com_base_sug[0]) if len(com_base_sug) > 0 else 66.67
-            porcentaje_actual = st.number_input(
-                "Comisión Motorizado (%)", min_value=0.0, max_value=100.0, 
-                value=val_default, step=0.5, key=f"comision_input_{moto_sel}"
-            )
-    else:
-        # Si es Chofer, se fijan sus datos de forma oculta
-        moto_sel = nombre_sesion
+            if len(com_base_sug) > 0 and pd.notna(com_base_sug[0]):
+                val_default = float(com_base_sug[0])
+        porcentaje_actual = st.number_input("Comisión Motorizado (%)", min_value=0.0, max_value=100.0, value=val_default, step=0.5, key=f"comision_input_{moto_sel}")
+else:
+    # Si es Chofer, se fijan sus datos de forma oculta
+    moto_sel = nombre_sesion
+    val_default = 66.67
+    if 'Comision_Base' in df_motorizados.columns:
         com_base_sug = df_motorizados.loc[df_motorizados['Nombre'] == moto_sel, 'Comision_Base'].values
-        porcentaje_actual = float(com_base_sug[0]) if len(com_base_sug) > 0 else 66.67
-        st.info(f"🛵 Registrando vuelta para el chofer: **{moto_sel}**")
+        if len(com_base_sug) > 0 and pd.notna(com_base_sug[0]):
+            val_default = float(com_base_sug[0])
+    porcentaje_actual = val_default
+    st.info(f"🛵 Registrando vuelta para el chofer: **{moto_sel}**")
 
     # Formulario para precargar la vuelta
     with st.form("form_agregar_vuelta", clear_on_submit=True):
