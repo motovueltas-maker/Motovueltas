@@ -208,6 +208,11 @@ if st.session_state["usuario_logueado"] is None:
         else:
             st.error("⚠️ El archivo usuarios.csv no contiene las columnas necesarias ('Usuario', 'Clave').")
 
+# Si no hay usuario en la sesión, detener la ejecución de la app aquí mismo
+if not st.session_state.get("usuario_logueado"):
+    st.warning("🔒 Por favor, inicia sesión para acceder al sistema.")
+    st.stop()  # Esto detiene Streamlit y evita que dibuje los módulos abajo
+
 # Si hace clic en "Cerrar Sesión", limpiar también los parámetros de la URL
 
 # ---------------------------------------------------------
