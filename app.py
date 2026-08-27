@@ -295,15 +295,15 @@ if opcion_menu == "Registrar Vuelta":
                     val_default = float(com_base_sug[0])
             porcentaje_actual = st.number_input("Comisión Motorizado (%)", min_value=0.0, max_value=100.0, value=val_default, step=0.5, key=f"comision_input_{moto_sel}")
     else:
-    # Si es Chofer, se fijan sus datos de forma oculta
-    moto_sel = nombre_sesion
-    val_default = 66.67
-    if 'Comision_Base' in df_motorizados.columns:
-        com_base_sug = df_motorizados.loc[df_motorizados['Nombre'] == moto_sel, 'Comision_Base'].values
-        if len(com_base_sug) > 0 and pd.notna(com_base_sug[0]):
-            val_default = float(com_base_sug[0])
-    porcentaje_actual = val_default
-    st.info(f"🛵 Registrando vuelta para el chofer: **{moto_sel}**")
+        # Si es Chofer, se fijan sus datos de forma oculta
+        moto_sel = nombre_sesion
+        val_default = 66.67
+        if 'Comision_Base' in df_motorizados.columns:
+            com_base_sug = df_motorizados.loc[df_motorizados['Nombre'] == moto_sel, 'Comision_Base'].values
+            if len(com_base_sug) > 0 and pd.notna(com_base_sug[0]):
+                val_default = float(com_base_sug[0])
+        porcentaje_actual = val_default
+        st.info(f"🛵 Registrando vuelta para el chofer: **{moto_sel}**")
 
     # Formulario para precargar la vuelta
     with st.form("form_agregar_vuelta", clear_on_submit=True):
