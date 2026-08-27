@@ -275,7 +275,7 @@ st.write("---")
 # TAB 1: REGISTRAR VUELTA (ADAPTATIVO SEGÚN ROL)
 # ---------------------------------------------------------
 if opcion_menu == "Registrar Vuelta":
-    es_admin = (st.session_state.get("rol_usuario") == "Admin")
+    es_admin = (str(st.session_state.get("rol_usuario", "")).strip().capitalize() == "Admin")
     nombre_sesion = st.session_state.get("nombre_usuario", "")
 
     # Configuración de controles superiores (Solo visibles para Admin)
