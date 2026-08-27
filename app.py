@@ -1,3 +1,5 @@
+import requests
+import base64
 import streamlit as st
 import pandas as pd
 import os
@@ -5,6 +7,40 @@ import zipfile
 import io
 from datetime import datetime
 import urllib.parse  # <--- Agrega esta línea aquí
+
+def guardar_csv_en_github(nombre_archivo, df):
+    # 1. Guardar localmente en el contenedor
+    df.to_csv(nombre_archivo, index=False)
+    
+    # 2. Subir directamente a GitHub si los Secrets están configurados
+    if "GITHUB_TOKEN" in st.secrets and "GITHUB_REPO" in st.secrets:
+        token = st.secrets["GITHUB_TOKEN"]
+        repo = st.secrets["GITHUB_REPO"]
+        url = f"https://api.github.com/repos/{repo}/contents/{nombre_archivo}"
+        
+        headers = {
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+        
+        # Obtener el SHA actual del archivo en GitHub
+        res = requests.get(url, headers=headers)
+        sha = res.json().get("sha", "") if res.status_code == 200 else ""
+        
+        # Convertir el DataFrame actualizado a Base64
+        contenido_csv = df.to_csv(index=False)
+        contenido_b64 = base64.b64encode(contenido_csv.encode("utf-8")).decode("utf-8")
+        
+        data = {
+            "message": f"Actualización automática de {nombre_archivo} desde Streamlit",
+            "content": contenido_b64,
+            "branch": "main"
+        }
+        if sha:
+            data["sha"] = sha
+            
+        # Hacer el commit directo a GitHub
+        requests.put(url, json=data, headers=headers)
 
 st.set_page_config(page_title="MotoVueltas - Control Operativo", layout="wide", page_icon="🛵")
 
@@ -310,7 +346,7 @@ if opcion_menu == "Registrar Vuelta":
                 }
                 
                 df_servicios = pd.concat([df_servicios, pd.DataFrame([nueva_fila])], ignore_index=True)
-                df_servicios.to_csv(FILE_SERVICIOS, index=False)
+                guardar_csv_en_github(FILE_SERVICIOS, df_servicios)
                 
                 if estado_val == "Validado":
                     st.success(f"✅ ¡Vuelta #{nuevo_id} guardada y VALIDADA por ${precio_directo:.2f}!")
@@ -399,7 +435,7 @@ elif opcion_menu == "Validar Precios":
                             val_precio, val_comision, m_moto, g_emp, 'Validado'
                         ]
 
-                        df_servicios.to_csv(FILE_SERVICIOS, index=False)
+                        guardar_csv_en_github(FILE_SERVICIOS, df_servicios)
                         st.toast(f"✅ Vuelta #{row['ID']} validada por ${val_precio:.2f}", icon="🎉")
                         st.rerun()
                     else:
@@ -498,7 +534,7 @@ elif opcion_menu == "Validar Precios":
                     edit_precio, edit_comision, m_moto_ed, g_emp_ed
                 ]
 
-                df_servicios.to_csv(FILE_SERVICIOS, index=False)
+                guardar_csv_en_github(FILE_SERVICIOS, df_servicios)
                 st.toast(f"✅ Vuelta #{id_sel_edit} actualizada correctamente", icon="💾")
                 st.rerun()
         else:
@@ -518,7 +554,7 @@ elif opcion_menu == "Corte Clientes":
         df_abonos = pd.read_csv(FILE_ABONOS)
     else:
         df_abonos = pd.DataFrame(columns=['ID', 'Fecha', 'Cliente', 'Monto', 'Concepto', 'Estado'])
-        df_abonos.to_csv(FILE_ABONOS, index=False)
+        guardar_csv_en_github(FILE_ABONOS, df_abonos)
 
     validados_cli = df_servicios[(df_servicios['Estado_Validacion'] == 'Validado') & (df_servicios['Estado_Cliente'] == 'Pendiente')]
     
@@ -557,7 +593,7 @@ elif opcion_menu == "Corte Clientes":
                         'Estado': 'Pendiente'
                     }
                     df_abonos = pd.concat([df_abonos, pd.DataFrame([nuevo_reg_ab])], ignore_index=True)
-                    df_abonos.to_csv(FILE_ABONOS, index=False)
+                    guardar_csv_en_github(FILE_ABONOS, df_abonos)
                     st.toast(f"✅ Abono de ${monto_ab:.2f} registrado a {cli_corte}", icon="💵")
                     st.rerun()
                 else:
@@ -654,7 +690,7 @@ elif opcion_menu == "Liquidación Motorizados":
         df_avances_m = pd.read_csv(FILE_AVANCES_MOTO)
     else:
         df_avances_m = pd.DataFrame(columns=['ID', 'Fecha', 'Motorizado', 'Monto', 'Concepto', 'Estado'])
-        df_avances_m.to_csv(FILE_AVANCES_MOTO, index=False)
+        guardar_csv_en_github(FILE_AVANCES_MOTO, df_avances_m)
 
     validados_mot = df_servicios[(df_servicios['Estado_Validacion'] == 'Validado') & (df_servicios['Estado_Motorizado'] == 'Pendiente')]
 
@@ -704,7 +740,7 @@ elif opcion_menu == "Liquidación Motorizados":
                             'Estado': 'Pendiente'
                         }
                         df_avances_m = pd.concat([df_avances_m, pd.DataFrame([nuevo_reg_av])], ignore_index=True)
-                        df_avances_m.to_csv(FILE_AVANCES_MOTO, index=False)
+                        guardar_csv_en_github(FILE_AVANCES_MOTO, df_avances_m)
                         st.toast(f"✅ Avance de ${monto_av_m:.2f} registrado a {mot_corte}", icon="💵")
                         st.rerun()
                     else:
@@ -762,12 +798,12 @@ elif opcion_menu == "Liquidación Motorizados":
                     # Marcar servicios como pagados
                     ids_liquidar = df_sorted['ID'].tolist()
                     df_servicios.loc[df_servicios['ID'].isin(ids_liquidar), 'Estado_Motorizado'] = 'Liquidado'
-                    df_servicios.to_csv(FILE_SERVICIOS, index=False)
+                    guardar_csv_en_github(FILE_SERVICIOS, df_servicios)
                     
                     # Marcar avances como descontados
                     if not df_av_pendientes.empty:
                         df_avances_m.loc[(df_avances_m['Motorizado'] == mot_corte) & (df_avances_m['Estado'] == 'Pendiente'), 'Estado'] = 'Liquidado'
-                        df_avances_m.to_csv(FILE_AVANCES_MOTO, index=False)
+                        guardar_csv_en_github(FILE_AVANCES_MOTO, df_avances_m)
                         
                     st.success(f"✅ ¡Se ha liquidado a {mot_corte} exitosamente! Las vueltas y avances han sido reseteados.")
                     st.rerun()
@@ -813,7 +849,7 @@ elif opcion_menu == "Directorio Clientes":
                     "Ubicacion": nuevo_cli_ubicacion.strip() if nuevo_cli_ubicacion.strip() else "-"
                 }
                 df_clientes = pd.concat([df_clientes, pd.DataFrame([nuevo_registro_cli])], ignore_index=True)
-                df_clientes.to_csv(FILE_CLIENTES, index=False)
+                guardar_csv_en_github(FILE_CLIENTES, df_clientes)
 
                 st.success(f"✅ Cliente '{nom_limpio}' registrado con éxito.")
                 st.toast(f"✅ Cliente '{nom_limpio}' registrado con éxito", icon="👤")
@@ -852,7 +888,7 @@ elif opcion_menu == "Directorio Clientes":
                 if 'Select_Label' in df_clientes.columns:
                     df_clientes = df_clientes.drop(columns=['Select_Label'])
 
-                df_clientes.to_csv(FILE_CLIENTES, index=False)
+                guardar_csv_en_github(FILE_CLIENTES, df_clientes)
                 st.toast("✅ Datos del cliente actualizados exitosamente", icon="✏️")
                 st.rerun()
 
@@ -906,7 +942,7 @@ elif opcion_menu == "Perfiles Motorizados":
                     "Comision_Base": float(nuevo_mot_comision)
                 }
                 df_motorizados = pd.concat([df_motorizados, pd.DataFrame([nuevo_reg_mot])], ignore_index=True)
-                df_motorizados.to_csv(FILE_MOTORIZADOS, index=False)
+                guardar_csv_en_github(FILE_MOTORIZADOS, df_motorizados)
                 st.success(f"✅ Motorizado '{nom_mot_limpio}' registrado con éxito.")
                 st.rerun()
 
@@ -948,6 +984,6 @@ elif opcion_menu == "Perfiles Motorizados":
                 df_motorizados.at[idx_mot, 'Telefono'] = tel_edit_limpio
                 df_motorizados.at[idx_mot, 'Comision_Base'] = float(edit_com_mot)
 
-                df_motorizados.to_csv(FILE_MOTORIZADOS, index=False)
+                guardar_csv_en_github(FILE_MOTORIZADOS, df_motorizados)
                 st.toast("✅ Motorizado actualizado con éxito", icon="🏍️")
                 st.rerun()
