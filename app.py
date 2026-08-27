@@ -909,7 +909,11 @@ elif opcion_menu == "Directorio Clientes":
     # 3. BASE DE DATOS VISUAL (TERCERO)
     st.write("---")
     st.write("### 📊 Base de Datos de Clientes")
-    st.dataframe(df_clientes[['Nombre', 'Telefono', 'Ubicacion']], use_container_width=True)
+    cols_mostrar = [c for c in ['Nombre', 'Telefono', 'Ubicacion'] if c in df_clientes.columns]    
+    if cols_mostrar:
+        st.dataframe(df_clientes[cols_mostrar], use_container_width=True)
+    else:
+        st.dataframe(df_clientes, use_container_width=True)
 
 # ---------------------------------------------------------
 # TAB 6: PERFILES DE MOTORIZADOS Y EDICIÓN
