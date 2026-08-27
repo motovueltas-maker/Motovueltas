@@ -375,7 +375,11 @@ if opcion_menu == "Registrar Vuelta":
 # ---------------------------------------------------------
 elif opcion_menu == "Validar Precios":
     st.subheader("Validación y Corrección de Vueltas")
-
+    
+    # Asegurar que la columna Estado_Validacion exista para evitar KeyError
+    if 'Estado_Validacion' not in df_servicios.columns:
+        df_servicios['Estado_Validacion'] = 'Pendiente'
+        
     # 1. VUELTAS PENDIENTES POR VALIDAR (TODAS EN UNA MISMA TABLA)
     st.write("### 📋 Vueltas Pendientes por Validar")
     vueltas_pendientes = df_servicios[df_servicios['Estado_Validacion'] == 'Pendiente']
