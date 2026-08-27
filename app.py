@@ -187,26 +187,26 @@ if st.session_state["usuario_logueado"] is None:
         pass_input = st.text_input("Contraseña", type="password")
         btn_login = st.form_submit_button("Ingresar", type="primary", use_container_width=True)
 
-if btn_login:
-    # Normalizar nombres de columnas para evitar fallos por mayúsculas/minúsculas
-    df_usuarios.columns = [c.strip().capitalize() for c in df_usuarios.columns]
+    if btn_login:
+        # Normalizar nombres de columnas para evitar fallos por mayúsculas/minúsculas
+        df_usuarios.columns = [c.strip().capitalize() for c in df_usuarios.columns]
     
-    if 'Usuario' in df_usuarios.columns and 'Clave' in df_usuarios.columns:
-        match = df_usuarios[
-            (df_usuarios['Usuario'].astype(str).str.strip().str.lower() == user_input) & 
-            (df_usuarios['Clave'].astype(str).str.strip() == pass_input)
-        ]
-        if not match.empty:
-            st.session_state["usuario_logueado"] = user_input
-            st.session_state["rol_usuario"] = match.iloc[0]['Rol'] if 'Rol' in match.columns else "Admin"
-            st.session_state["nombre_usuario"] = match.iloc[0]['Nombre'] if 'Nombre' in match.columns else user_input.capitalize()
-            st.query_params["usr"] = user_input
-            st.toast(f"Bienvenido {st.session_state['nombre_usuario']}", icon="👋")
-            st.rerun()
+        if 'Usuario' in df_usuarios.columns and 'Clave' in df_usuarios.columns:
+            match = df_usuarios[
+                (df_usuarios['Usuario'].astype(str).str.strip().str.lower() == user_input) & 
+                (df_usuarios['Clave'].astype(str).str.strip() == pass_input)
+            ]
+            if not match.empty:
+                st.session_state["usuario_logueado"] = user_input
+                st.session_state["rol_usuario"] = match.iloc[0]['Rol'] if 'Rol' in match.columns else "Admin"
+                st.session_state["nombre_usuario"] = match.iloc[0]['Nombre'] if 'Nombre' in match.columns else user_input.capitalize()
+                st.query_params["usr"] = user_input
+                st.toast(f"Bienvenido {st.session_state['nombre_usuario']}", icon="👋")
+                st.rerun()
+            else:
+                st.error("⚠️ Usuario o contraseña incorrectos.")
         else:
-            st.error("⚠️ Usuario o contraseña incorrectos.")
-    else:
-        st.error("⚠️ El archivo usuarios.csv no contiene las columnas necesarias ('Usuario', 'Clave').")
+            st.error("⚠️ El archivo usuarios.csv no contiene las columnas necesarias ('Usuario', 'Clave').")
 
 # Si hace clic en "Cerrar Sesión", limpiar también los parámetros de la URL
 
