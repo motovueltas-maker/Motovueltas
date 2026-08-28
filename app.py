@@ -954,40 +954,30 @@ elif opcion_menu == "Perfiles Motorizados":
         st.info("No hay motorizados registrados en el sistema.")
 
     # 2. AGREGAR NUEVO MOTORIZADO
-    st.write("---")
-    st.write("### ➕ Agregar Nuevo Motorizado")
-    with st.form("form_agregar_motorizado", clear_on_submit=True):
-        col_m1, col_m2, col_m3 = st.columns(3)
-        with col_m1:
-            nuevo_mot_nombre = st.text_input("Nombre del Chofer")
-        with col_m2:
-            nuevo_mot_tel = st.text_input("Teléfono / WhatsApp (ID Único)")
-        with col_m3:
-            nuevo_mot_comision = st.number_input("% Comisión Predeterminada", min_value=0.0, max_value=100.0, value=66.67, step=0.5)
+        st.write("---")
+        st.write("### ➕ Agregar Nuevo Motorizado")
+        with st.form("form_agregar_motorizado", clear_on_submit=True):
+            nuevo_nombre = st.text_input("Nombre del Chofer")
+            nuevo_telefono = st.text_input("Teléfono / WhatsApp (ID Único)")
+            nueva_comision = st.number_input("% Comisión Predeterminada", min_value=0.0, max_value=100.0, value=66.67, step=0.01)
+            submit_m = st.form_submit_button("Guardar Motorizado", type="primary")
 
-        guardar_mot_btn = st.form_submit_button("Guardar Motorizado", type="primary", use_container_width=True)
-
-    if guardar_mot_btn:
-        nom_mot_limpio = nuevo_mot_nombre.strip()
-        tel_mot_limpio = nuevo_mot_tel.strip()
-        
-        if not nom_mot_limpio or not tel_mot_limpio:
-            st.error("⚠️ Tanto el Nombre como el Teléfono son obligatorios.")
-        else:
-            telefonos_existentes = df_motorizados['Telefono'].fillna("").astype(str).str.strip().tolist() if not df_motorizados.empty else []
-            if tel_mot_limpio in telefonos_existentes:
-                st.error(f"❌ Ya existe un motorizado registrado con el teléfono {tel_mot_limpio}.")
-            else:
-                nuevo_reg_mot = {
-                    "Nombre": nom_mot_limpio, 
-                    "Telefono": tel_mot_limpio, 
-                    "Comision_Base": float(nuevo_mot_comision)
-                }
-                df_motorizados = pd.concat([df_motorizados, pd.DataFrame([nuevo_reg_mot])], ignore_index=True)
-                guardar_csv_en_github(FILE_MOTORIZADOS, df_motorizados)
-                st.success(f"✅ Motorizado '{nom_mot_limpio}' registrado con éxito.")
-                st.rerun()
-
+            if submit_m:
+                if not nuevo_nombre:
+                    st.error("El nombre es obligatorio.")
+                else:
+                    nuevo_id = len(df_motorizados) + 1 if not df_motorizados.empty else 1
+                    nueva_fila = pd.DataFrame([{
+                        "id": nuevo_id,
+                        "nombre": nuevo_nombre,
+                        "porcentaje_ganancia": nueva_comision,
+                        "saldo_pendiente": 0
+                    }])
+                    df_motorizados = pd.concat([df_motorizados, nueva_fila], ignore_index=True)
+                    guardar_csv_en_github(FILE_MOTORIZADOS, df_motorizados)
+                    st.success(f"Motorizado '{nuevo_nombre}' guardado exitosamente.")
+                    st.rerun()
+                    
     # 3. EDITAR MOTORIZADO EXISTENTE
     if not df_motorizados.empty:
         st.write("---")
@@ -1022,9 +1012,8 @@ elif opcion_menu == "Perfiles Motorizados":
                 st.error("⚠️ El nombre y el teléfono son obligatorios.")
             else:
                 # Actualizar el registro en el DataFrame original
-                df_motorizados.at[idx_mot, 'Nombre'] = nom_edit_limpio
-                df_motorizados.at[idx_mot, 'Telefono'] = tel_edit_limpio
-                df_motorizados.at[idx_mot, 'Comision_Base'] = float(edit_com_mot)
+                df_motorizados.at[idx_mot, 'nombre'] = nom_edit_limpio
+                df_motorizados.at[idx_mot, 'porcentaje_ganancia'] = float(edit_com_mot)
 
                 guardar_csv_en_github(FILE_MOTORIZADOS, df_motorizados)
                 st.toast("✅ Motorizado actualizado con éxito", icon="🏍️")
