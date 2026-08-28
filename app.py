@@ -967,6 +967,7 @@ elif opcion_menu == "Perfiles Motorizados":
                 nueva_fila = pd.DataFrame([{
                     "id": nuevo_id,
                     "nombre": nuevo_nombre,
+                    "telefono": nuevo_telefono,
                     "porcentaje_ganancia": nueva_comision,
                     "saldo_pendiente": 0
                 }])
