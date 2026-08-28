@@ -946,11 +946,10 @@ elif opcion_menu == "Perfiles Motorizados":
 
     # 1. LISTA ACTUAL DE MOTORIZADOS
     st.write("### 🏍️ Motorizados Registrados")
-    cols_motos = [c for c in ['Nombre', 'Telefono', 'Comision_Base'] if c in df_motorizados.columns]
-    if cols_motos:
-        st.dataframe(df_motorizados[cols_motos], use_container_width=True)
-    else:
-        st.dataframe(df_motorizados, use_container_width=True)
+    if not df_motorizados.empty:
+    st.dataframe(df_motorizados, use_container_width=True)
+else:
+    st.info("No hay motorizados registrados en el sistema.")
 
     # 2. AGREGAR NUEVO MOTORIZADO
     st.write("---")
