@@ -981,7 +981,7 @@ elif opcion_menu == "Perfiles Motorizados":
         st.write("### ✏️ Editar Motorizado Existente")
         
         df_temp_m = df_motorizados.copy()
-        df_temp_m['Select_Label'] = df_temp_m['Nombre'].astype(str) + " (" + df_temp_m['Telefono'].fillna("").astype(str) + ")"
+        df_temp_m['Select_Label'] = df_temp_m['nombre'].astype(str)
         opciones_mot = df_temp_m['Select_Label'].tolist()
         
         mot_sel_label = st.selectbox("Seleccionar Motorizado a Modificar", opciones_mot)
@@ -992,11 +992,11 @@ elif opcion_menu == "Perfiles Motorizados":
         with st.form("form_editar_motorizado"):
             col_ed_m1, col_ed_m2, col_ed_m3 = st.columns(3)
             with col_ed_m1:
-                edit_nom_mot = st.text_input("Editar Nombre", value=str(row_mot_edit.get('Nombre', '')))
+                edit_nom_mot = st.text_input("Editar Nombre", value=str(row_mot_edit.get('nombre', '')))
             with col_ed_m2:
-                edit_tel_mot = st.text_input("Editar Teléfono", value=str(row_mot_edit.get('Telefono', '')))
+                edit_tel_mot = st.text_input("Editar Teléfono", value=str(row_mot_edit.get('telefono', '')))
             with col_ed_m3:
-                com_val_act = float(row_mot_edit.get('Comision_Base', 66.67))
+                com_val_act = float(row_mot_edit.get('porcentaje_ganancia', 66.67))
                 edit_com_mot = st.number_input("Editar % Comisión Base", min_value=0.0, max_value=100.0, value=com_val_act, step=0.5)
 
             btn_update_mot = st.form_submit_button("Guardar Cambios del Motorizado", type="primary", use_container_width=True)
@@ -1005,8 +1005,8 @@ elif opcion_menu == "Perfiles Motorizados":
             nom_edit_limpio = edit_nom_mot.strip()
             tel_edit_limpio = edit_tel_mot.strip()
 
-            if not nom_edit_limpio or not tel_edit_limpio:
-                st.error("⚠️ El nombre y el teléfono son obligatorios.")
+            if not nom_edit_limpio:
+                st.error("⚠️ El nombre es obligatorio.")
             else:
                 # Actualizar el registro en el DataFrame original
                 df_motorizados.at[idx_mot, 'nombre'] = nom_edit_limpio
