@@ -711,6 +711,12 @@ elif opcion_menu == "Validar Precios":
 # ---------------------------------------------------------
 elif opcion_menu == "Liquidación Motorizados":
     st.subheader("Liquidación y Resumen de Motorizados")
+    
+    # Asegurar que las columnas requeridas existan en df_servicios para evitar KeyError
+    if 'Estado_Validacion' not in df_servicios.columns:
+        df_servicios['Estado_Validacion'] = 'Pendiente'
+    if 'Estado_Motorizado' not in df_servicios.columns:
+        df_servicios['Estado_Motorizado'] = 'Pendiente'
 
     FILE_AVANCES_MOTO = "avances_motorizados.csv"
     if os.path.exists(FILE_AVANCES_MOTO):
@@ -720,7 +726,6 @@ elif opcion_menu == "Liquidación Motorizados":
         guardar_csv_en_github(FILE_AVANCES_MOTO, df_avances_m)
 
     validados_mot = df_servicios[(df_servicios['Estado_Validacion'] == 'Validado') & (df_servicios['Estado_Motorizado'] == 'Pendiente')]
-
     if not validados_mot.empty:
         # 1. Filtros de Búsqueda
         col_m1, col_m2, col_m3 = st.columns(3)
