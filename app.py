@@ -90,8 +90,6 @@ def cargar_datos():
 
     if os.path.exists(FILE_MOTORIZADOS):
         df_mot = pd.read_csv(FILE_MOTORIZADOS)
-        if not df_mot.empty:
-            df_mot.columns = [c.strip().capitalize() for c in df_mot.columns]
     else:
         df_mot = pd.DataFrame([{"Nombre": "Omar", "Comision_Base": 66.67},
                                {"Nombre": "Jhoiner", "Comision_Base": 66.67},
