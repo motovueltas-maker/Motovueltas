@@ -567,12 +567,16 @@ elif opcion_menu == "Validar Precios":
         
 # ---------------------------------------------------------
 # TAB 3: CORTE CLIENTES, ABONOS Y ENVÍO DIRECTO A WHATSAPP
-# ---------------------------------------------------------
-elif opcion_menu == "Corte Clientes":
+# ---------------------------------------------------------elif opcion_menu == "Corte Clientes":
     st.subheader("Corte de Cuenta Clientes")
     
+    # Asegurar que las columnas requeridas existan en df_servicios para evitar KeyError
+    if 'Estado_Validacion' not in df_servicios.columns:
+        df_servicios['Estado_Validacion'] = 'Pendiente'
+    if 'Estado_Cliente' not in df_servicios.columns:
+        df_servicios['Estado_Cliente'] = 'Pendiente'
+
     FILE_ABONOS = "abonos_clientes.csv"
-    
     if os.path.exists(FILE_ABONOS):
         df_abonos = pd.read_csv(FILE_ABONOS)
     else:
