@@ -947,36 +947,35 @@ elif opcion_menu == "Perfiles Motorizados":
     # 1. LISTA ACTUAL DE MOTORIZADOS
     st.write("### 🏍️ Motorizados Registrados")
     if not df_motorizados.empty:
-        # Eliminar columnas duplicadas si existen para evitar ValueError en Streamlit
         df_motos_clean = df_motorizados.loc[:, ~df_motorizados.columns.duplicated()]
         st.dataframe(df_motos_clean, use_container_width=True)
     else:
         st.info("No hay motorizados registrados en el sistema.")
 
-    # 2. AGREGAR NUEVO MOTORIZADO
-        st.write("---")
-        st.write("### ➕ Agregar Nuevo Motorizado")
-        with st.form("form_agregar_motorizado", clear_on_submit=True):
-            nuevo_nombre = st.text_input("Nombre del Chofer")
-            nuevo_telefono = st.text_input("Teléfono / WhatsApp (ID Único)")
-            nueva_comision = st.number_input("% Comisión Predeterminada", min_value=0.0, max_value=100.0, value=66.67, step=0.01)
-            submit_m = st.form_submit_button("Guardar Motorizado", type="primary")
+    # 2. AGREGAR NUEVO MOTORIZADO (Fuera del else, siempre visible)
+    st.write("---")
+    st.write("### ➕ Agregar Nuevo Motorizado")
+    with st.form("form_agregar_motorizado", clear_on_submit=True):
+        nuevo_nombre = st.text_input("Nombre del Chofer")
+        nuevo_telefono = st.text_input("Teléfono / WhatsApp (ID Único)")
+        nueva_comision = st.number_input("% Comisión Predeterminada", min_value=0.0, max_value=100.0, value=66.67, step=0.01)
+        submit_m = st.form_submit_button("Guardar Motorizado", type="primary")
 
-            if submit_m:
-                if not nuevo_nombre:
-                    st.error("El nombre es obligatorio.")
-                else:
-                    nuevo_id = len(df_motorizados) + 1 if not df_motorizados.empty else 1
-                    nueva_fila = pd.DataFrame([{
-                        "id": nuevo_id,
-                        "nombre": nuevo_nombre,
-                        "porcentaje_ganancia": nueva_comision,
-                        "saldo_pendiente": 0
-                    }])
-                    df_motorizados = pd.concat([df_motorizados, nueva_fila], ignore_index=True)
-                    guardar_csv_en_github(FILE_MOTORIZADOS, df_motorizados)
-                    st.success(f"Motorizado '{nuevo_nombre}' guardado exitosamente.")
-                    st.rerun()
+        if submit_m:
+            if not nuevo_nombre:
+                st.error("El nombre es obligatorio.")
+            else:
+                nuevo_id = len(df_motorizados) + 1 if not df_motorizados.empty else 1
+                nueva_fila = pd.DataFrame([{
+                    "id": nuevo_id,
+                    "nombre": nuevo_nombre,
+                    "porcentaje_ganancia": nueva_comision,
+                    "saldo_pendiente": 0
+                }])
+                df_motorizados = pd.concat([df_motorizados, nueva_fila], ignore_index=True)
+                guardar_csv_en_github(FILE_MOTORIZADOS, df_motorizados)
+                st.success(f"Motorizado '{nuevo_nombre}' guardado exitosamente.")
+                st.rerun()
                     
     # 3. EDITAR MOTORIZADO EXISTENTE
     if not df_motorizados.empty:
